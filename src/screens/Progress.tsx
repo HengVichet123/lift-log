@@ -25,7 +25,7 @@ export function Progress({ typeId }: { typeId?: string }) {
   const { t, date } = useI18n()
   const lookup = useExercises()
   const types = useLiveQuery(() => db.dayTypes.orderBy('order').toArray(), [])
-  const current = typeId ?? types?.[0]?.id
+  const current = typeId ?? types?.[0]?.id ?? 'all'
 
   const weeks = useLiveQuery(async () => {
     const sessions = await finishedSessions()
@@ -41,12 +41,18 @@ export function Progress({ typeId }: { typeId?: string }) {
   }, [date])
 
   const rows = useLiveQuery(async () => {
-    if (!current) return []
-    const type = await db.dayTypes.get(current)
     const finished = new Set((await finishedSessions()).map((s) => s.id))
-    const ids = [...(type?.exerciseIds ?? [])]
-    const sessionIds = (await db.sessions.where('dayTypeId').equals(current).primaryKeys()) as number[]
-    for (const e of await db.entries.where('sessionId').anyOf(sessionIds).toArray()) if (!ids.includes(e.exerciseId)) ids.push(e.exerciseId)
+    let ids: string[]
+    if (current === 'all') {
+      // every exercise ever done, most recent first
+      const done = (await db.entries.orderBy('date').reverse().toArray()).filter((e) => finished.has(e.sessionId) && workSets(e).length > 0)
+      ids = [...new Set(done.map((e) => e.exerciseId))]
+    } else {
+      const type = await db.dayTypes.get(current)
+      ids = [...(type?.exerciseIds ?? [])]
+      const sessionIds = (await db.sessions.where('dayTypeId').equals(current).primaryKeys()) as number[]
+      for (const e of await db.entries.where('sessionId').anyOf(sessionIds).toArray()) if (!ids.includes(e.exerciseId)) ids.push(e.exerciseId)
+    }
     return Promise.all(
       ids.map(async (id) => {
         const entries = (await db.entries.where('[exerciseId+date]').between([id, ''], [id, dayKey(new Date(Date.now() + 864e5))]).toArray()).filter(
@@ -75,6 +81,9 @@ export function Progress({ typeId }: { typeId?: string }) {
             {dt.name}
           </button>
         ))}
+        <button type="button" aria-pressed={current === 'all'} onClick={() => go({ name: 'progress', typeId: 'all' }, true)}>
+          {t.allTab}
+        </button>
       </nav>
 
       <ul className="prog-cards">

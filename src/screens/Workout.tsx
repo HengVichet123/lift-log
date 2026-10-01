@@ -11,7 +11,19 @@ import { HeaderTools } from '../components/HeaderTools'
 import { ScreenHeader } from '../components/ScreenHeader'
 
 /** Start a routine: one workout at a time, pre-filled with last time's set count. */
+let starting = false
+
 export async function startRoutine(dayTypeId: string) {
+  if (starting) return // a quick double tap must not create two workouts
+  starting = true
+  try {
+    await start(dayTypeId)
+  } finally {
+    starting = false
+  }
+}
+
+async function start(dayTypeId: string) {
   const running = await activeSession()
   if (running) {
     go({ name: 'active', sessionId: running.id! })

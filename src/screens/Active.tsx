@@ -1,7 +1,7 @@
 import { Check, DotsThree, NotePencil, Plus, Trash, X } from '@phosphor-icons/react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { useEffect, useState } from 'react'
-import { db, doneSets, workSets, type Entry, type SetEntry } from '../db'
+import { useEffect, useRef, useState } from 'react'
+import { db, dayKey, doneSets, workSets, type Entry, type SetEntry } from '../db'
 import { useExercises, type Exercise } from '../exercises'
 import { fmtKg, fmtReps, fmtVolume, volume } from '../format'
 import { useI18n } from '../i18n'
@@ -30,11 +30,12 @@ export function Active({ sessionId }: { sessionId: number }) {
     return { session, type, entries }
   }, [sessionId])
 
-  if (data === undefined) return <main className="screen" />
-  if (data === null) {
-    go({ name: 'workout' }, true)
-    return null
-  }
+  // the workout was deleted (or the link is old): go back to the Workout tab
+  useEffect(() => {
+    if (data === null) go({ name: 'workout' }, true)
+  }, [data])
+
+  if (!data) return <main className="screen" />
   const { session, type, entries } = data
   const editing = !!session.finishedAt
   const all = entries.flatMap(workSets)
@@ -85,9 +86,10 @@ export function Active({ sessionId }: { sessionId: number }) {
           <input
             type="date"
             value={session.date}
+            max={dayKey()}
             onChange={(e) => {
               const d = e.target.value
-              if (!d) return
+              if (!d || d > dayKey()) return // no workouts in the future
               db.transaction('rw', db.sessions, db.entries, async () => {
                 await db.sessions.update(sessionId, { date: d })
                 await db.entries.where('sessionId').equals(sessionId).modify({ date: d })
@@ -152,18 +154,20 @@ function ExerciseCard({ ex, entry, sessionDate }: { ex: Exercise; entry: Entry; 
     return sameKind[k] ?? entry.sets[i - 1]
   }
 
-  const tick = (i: number) => {
+  /** Returns false when there is nothing to save yet (no reps typed, nothing to copy). */
+  const tick = (i: number): boolean => {
     const s = entry.sets[i]
     if (s.done) {
       update(i, { done: false })
-      return
+      return true
     }
     const h = hint(i)
     const w = s.w || h?.w || 0
     const r = s.r || h?.r || 0
-    if (r <= 0) return
+    if (r <= 0) return false
     update(i, { w, r, rTo: s.rTo ?? h?.rTo, assist: s.assist ?? h?.assist, done: true })
     navigator.vibrate?.(20)
+    return true
   }
 
   let n = 0
@@ -259,13 +263,25 @@ interface RowProps {
   hint?: SetEntry
   onPrev: () => void
   onChange: (patch: Partial<SetEntry>) => void
-  onTick: () => void
+  onTick: () => boolean
   onDelete: () => void
 }
 
 function SetRow({ label, s, prev, hint, onPrev, onChange, onTick, onDelete }: RowProps) {
   const { t } = useI18n()
   const [open, setOpen] = useState(!!(s.rTo || s.assist))
+  const [needReps, setNeedReps] = useState(false)
+  const kgRef = useRef<HTMLInputElement>(null)
+  const repsRef = useRef<HTMLInputElement>(null)
+  const tickOrAsk = () => {
+    if (onTick()) {
+      setNeedReps(false)
+      return
+    }
+    // first time on this exercise: point at the empty box instead of doing nothing
+    setNeedReps(true)
+    ;(s.w ? repsRef : kgRef).current?.focus()
+  }
   return (
     <div className={`set-row ${s.done ? 'is-done' : ''} ${s.warmup ? 'is-warmup' : ''}`} role="row">
       <button type="button" className="set-label" aria-expanded={open} aria-label={`${t.setCol} ${label}: ${t.options}`} onClick={() => setOpen((v) => !v)}>
@@ -274,11 +290,12 @@ function SetRow({ label, s, prev, hint, onPrev, onChange, onTick, onDelete }: Ro
       <button type="button" className="set-prev" onClick={onPrev} disabled={!prev}>
         {prev ? `${prev.w > 0 ? fmtKg(prev.w) : t.bw} × ${fmtReps(prev)}` : '-'}
       </button>
-      <Num value={s.w} hint={hint && hint.w > 0 ? fmtKg(hint.w) : ''} label={t.kg} onCommit={(w) => onChange({ w })} />
-      <Num value={s.r} hint={hint ? fmtKg(hint.r) : ''} label={t.reps} onCommit={(r) => onChange({ r })} />
-      <button type="button" className="tick" aria-pressed={!!s.done} aria-label={t.done} onClick={onTick}>
+      <Num inputRef={kgRef} value={s.w} hint={hint && hint.w > 0 ? fmtKg(hint.w) : ''} label={t.kg} onCommit={(w) => onChange({ w })} />
+      <Num inputRef={repsRef} value={s.r} hint={hint ? fmtKg(hint.r) : ''} label={t.reps} onCommit={(r) => { onChange({ r }); if (r > 0) setNeedReps(false) }} />
+      <button type="button" className="tick" aria-pressed={!!s.done} aria-label={t.done} onClick={tickOrAsk}>
         <Check size={20} weight="bold" />
       </button>
+      {needReps && !s.done && <p className="set-help" role="alert">{t.typeRepsFirst}</p>}
       {open && (
         <div className="set-extra">
           <label className="mini">
@@ -301,7 +318,15 @@ function SetRow({ label, s, prev, hint, onPrev, onChange, onTick, onDelete }: Ro
   )
 }
 
-function Num({ value, hint, label, onCommit }: { value: number; hint: string; label: string; onCommit: (v: number) => void }) {
+interface NumProps {
+  value: number
+  hint: string
+  label: string
+  onCommit: (v: number) => void
+  inputRef?: React.Ref<HTMLInputElement>
+}
+
+function Num({ value, hint, label, onCommit, inputRef }: NumProps) {
   const [text, setText] = useState(value ? fmtKg(value) : '')
   // follow changes made elsewhere (tick, tap on Previous)
   useEffect(() => {
@@ -309,6 +334,7 @@ function Num({ value, hint, label, onCommit }: { value: number; hint: string; la
   }, [value])
   return (
     <input
+      ref={inputRef}
       className="num"
       type="text"
       inputMode="decimal"

@@ -108,12 +108,19 @@ export function History({ day }: { day?: string }) {
 
       <section>
         <h2 className="section-title">{date(sel, 'long')}</h2>
-        {dayList.length === 0 ? (
-          <div className="day-empty">
-            <p className="muted">{t.noWorkoutDay}</p>
+        {dayList.length > 0 && (
+          <ul className="history-list">
+            {dayList.map((s) => (
+              <DayWorkout key={s.id} s={s} name={types?.find((x) => x.id === s.dayTypeId)?.name ?? t.workout} />
+            ))}
+          </ul>
+        )}
+        {(dayList.length === 0 || selected <= today) && (
+          <div className={`day-empty ${dayList.length ? 'after' : ''}`}>
+            {dayList.length === 0 && <p className="muted">{t.noWorkoutDay}</p>}
             {selected <= today && (
               <>
-                <p className="field-label">{t.logForDay}</p>
+                <p className="field-label">{dayList.length ? t.addAnother : t.logForDay}</p>
                 <div className="chip-row">
                   {(types ?? []).map((dt) => (
                     <button type="button" key={dt.id} className="btn-chip" onClick={() => logForDay(selected, dt.id)}>
@@ -125,12 +132,6 @@ export function History({ day }: { day?: string }) {
               </>
             )}
           </div>
-        ) : (
-          <ul className="history-list">
-            {dayList.map((s) => (
-              <DayWorkout key={s.id} s={s} name={types?.find((x) => x.id === s.dayTypeId)?.name ?? t.workout} />
-            ))}
-          </ul>
         )}
       </section>
     </main>

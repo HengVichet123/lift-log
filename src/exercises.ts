@@ -34,11 +34,14 @@ export function catalogExercise(id: string): Exercise | undefined {
 }
 
 /** Catalog plus the user's own exercises, as one lookup. */
-export function useExercises(): (id: string) => Exercise | undefined {
+export type Lookup = ((id: string) => Exercise | undefined) & { loaded: boolean }
+
+export function useExercises(): Lookup {
   const custom = useLiveQuery(() => db.customExercises.toArray(), [])
   const map = new Map<string, Exercise>()
   for (const c of custom ?? []) map.set(c.id, { id: c.id, name: c.name, group: c.group, equipment: 'other', frames: 0, starter: false })
-  return (id) => BY_ID.get(id) ?? map.get(id)
+  // `loaded` is false until the user's own exercises have been read
+  return Object.assign((id: string) => BY_ID.get(id) ?? map.get(id), { loaded: custom !== undefined })
 }
 
 const REMOTE = 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/'

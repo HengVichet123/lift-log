@@ -15,14 +15,23 @@ type Metric = 'heaviest' | 'e1rm' | 'volume'
 
 export function ExerciseDetail({ id }: { id: string }) {
   const { t, date } = useI18n()
-  const ex = useExercises()(id)
+  const lookup = useExercises()
+  const ex = lookup(id)
   const [metric, setMetric] = useState<Metric>('heaviest')
   const entries = useLiveQuery(async () => {
     const finished = new Set((await finishedSessions()).map((s) => s.id))
     const list = await db.entries.where('exerciseId').equals(id).toArray()
     return list.filter((e) => finished.has(e.sessionId) && doneSets(e).length > 0).sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.sessionId - b.sessionId))
   }, [id])
-  if (!ex) return <main className="screen" />
+  if (!ex && !lookup.loaded) return <main className="screen" />
+  if (!ex) {
+    return (
+      <main className="screen">
+        <ScreenHeader title={t.progress} onBack={() => back({ name: 'progress' })} />
+        <p className="empty-hint pad">{t.notFoundExercise}</p>
+      </main>
+    )
+  }
 
   const list = entries ?? []
   const withWork = list.filter((e) => workSets(e).length > 0)
@@ -57,6 +66,18 @@ export function ExerciseDetail({ id }: { id: string }) {
         <LineChart points={points} unit={bodyweight ? t.reps : t.kg} />
       ) : (
         withWork.length > 0 && <p className="empty-hint pad">{t.needMore}</p>
+      )}
+
+      {rec.mostReps && !rec.heaviest && (
+        <section>
+          <h2 className="section-title">{t.records}</h2>
+          <div className="rec-grid">
+            <div className="rec">
+              <span className="rec-val">{fmtSet(rec.mostReps.set, t.bw)}</span>
+              <span className="rec-label">{t.recordKind.mostReps}</span>
+            </div>
+          </div>
+        </section>
       )}
 
       {rec.heaviest && (

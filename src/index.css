@@ -669,3 +669,18 @@ button:disabled { cursor: default; opacity: 0.4; }
 
 .date-edit { display: flex; align-items: center; gap: 10px; color: var(--ink-2); font-weight: 600; font-size: 14px; }
 .date-edit input { min-height: 42px; padding: 0 10px; border: 1px solid var(--line); border-radius: var(--r-in); background: var(--surface); color: var(--ink); }
+
+.set-help { grid-column: 1 / -1; margin: 2px 0 2px 42px; color: var(--gold); font-size: 13px; font-weight: 600; }
+.day-empty.after { margin-top: 12px; }
+
+/* small phones (320-360px): keep the Previous column readable */
+@media (max-width: 360px) {
+  .screen { padding: 0 12px 32px; }
+  .screen-header, .active-header { margin: 0 -12px; }
+  .ex-card { padding: 10px 6px 6px; }
+  .set-head, .set-row { grid-template-columns: 26px 1fr 52px 46px 38px; gap: 4px; }
+  .set-prev { font-size: 14px; }
+  .num { font-size: 18px; }
+  .tick { width: 36px; height: 36px; }
+  .set-extra, .set-help { padding-left: 30px; margin-left: 0; }
+}

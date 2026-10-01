@@ -24,7 +24,15 @@ export function Summary({ sessionId }: { sessionId: number }) {
     return { session, type, entries, nth, records }
   }, [sessionId])
 
-  if (!data) return <main className="screen" />
+  if (data === undefined) return <main className="screen" />
+  if (data === null) {
+    return (
+      <main className="screen">
+        <ScreenHeader title={t.history} onBack={() => go({ name: 'history' }, true)} />
+        <p className="empty-hint pad">{t.notFoundWorkout}</p>
+      </main>
+    )
+  }
   const { session, type, entries, nth, records } = data
   const sets = entries.flatMap(workSets)
   const prs = new Map(records.map((r) => [r.exerciseId, r.kinds]))
