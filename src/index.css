@@ -702,3 +702,26 @@ button:disabled { cursor: default; opacity: 0.4; }
   color: var(--ink-2);
   font-weight: 600;
 }
+
+/* swipe left to delete */
+.swipe { position: relative; overflow: hidden; border-radius: inherit; }
+.swipe-action {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 96px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 0;
+  background: var(--danger);
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+}
+.swipe-content { position: relative; background: var(--surface); touch-action: pan-y; transition: transform 200ms ease-out; }
+.swipe-content.dragging { transition: none; }
+@media (prefers-reduced-motion: reduce) { .swipe-content { transition: none; } }

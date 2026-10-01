@@ -1,4 +1,4 @@
-import { Barbell, CaretLeft, CaretRight, Plus, Trash, Trophy } from '@phosphor-icons/react'
+import { Barbell, CaretLeft, CaretRight, Plus, Trophy } from '@phosphor-icons/react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useMemo, useState } from 'react'
 import { db, dayKey, finishedSessions, newId, parseDay, workSets, type Session } from '../db'
@@ -8,6 +8,7 @@ import { useI18n } from '../i18n'
 import { sessionRecords } from '../records'
 import { go } from '../router'
 import { HeaderTools } from '../components/HeaderTools'
+import { SwipeRow } from '../components/SwipeRow'
 import { ScreenHeader } from '../components/ScreenHeader'
 
 /** Add a finished workout on a past (or any) day and open it for editing. */
@@ -148,47 +149,42 @@ function DayWorkout({ s, name }: { s: Session; name: string }) {
 
   return (
     <li className="h-card">
-      <button type="button" className="h-open" onClick={() => go({ name: 'active', sessionId: s.id! })}>
-        <span className="h-top">
-          <span className="h-name">{name}</span>
-        </span>
-        <span className="h-stats">
-          <span>
-            <Barbell size={16} /> {fmtVolume(volume(sets))} {t.kg}
+      <SwipeRow
+        label={t.deleteBtn}
+        onDelete={() => {
+          if (confirm(t.deleteWorkoutConfirm)) deleteSession(s.id!)
+        }}
+      >
+        <button type="button" className="h-open" onClick={() => go({ name: 'active', sessionId: s.id! })}>
+          <span className="h-top">
+            <span className="h-name">{name}</span>
           </span>
-          {!!data?.prs && (
-            <span className="h-pr">
-              <Trophy size={16} weight="fill" /> {data.prs}
+          <span className="h-stats">
+            <span>
+              <Barbell size={16} /> {fmtVolume(volume(sets))} {t.kg}
             </span>
-          )}
-        </span>
-        <span className="h-table">
-          {entries.map((e) => {
-            const ex = lookup(e.exerciseId)
-            const best = topSet(workSets(e))
-            return ex ? (
-              <span key={e.id} className="h-row">
-                <span className="h-ex">
-                  {e.sets.length} × {ex.name}
-                </span>
-                <span className="h-best">{best ? fmtSet(best, t.bw) : ''}</span>
+            {!!data?.prs && (
+              <span className="h-pr">
+                <Trophy size={16} weight="fill" /> {data.prs}
               </span>
-            ) : null
-          })}
-        </span>
-      </button>
-      <span className="h-actions">
-        <button
-          type="button"
-          className="btn-chip danger"
-          onClick={() => {
-            if (confirm(t.deleteWorkoutConfirm)) deleteSession(s.id!)
-          }}
-        >
-          <Trash size={16} />
-          {t.deleteBtn}
+            )}
+          </span>
+          <span className="h-table">
+            {entries.map((e) => {
+              const ex = lookup(e.exerciseId)
+              const best = topSet(workSets(e))
+              return ex ? (
+                <span key={e.id} className="h-row">
+                  <span className="h-ex">
+                    {e.sets.length} × {ex.name}
+                  </span>
+                  <span className="h-best">{best ? fmtSet(best, t.bw) : ''}</span>
+                </span>
+              ) : null
+            })}
+          </span>
         </button>
-      </span>
+      </SwipeRow>
     </li>
   )
 }
