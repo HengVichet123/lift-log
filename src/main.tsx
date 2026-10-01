@@ -9,12 +9,15 @@ import '@fontsource/noto-sans-khmer/khmer-400.css'
 import '@fontsource/noto-sans-khmer/khmer-600.css'
 import './index.css'
 import App from './App.tsx'
+import { seedIfEmpty } from './defaults'
 import { I18nProvider } from './i18n'
 
-createRoot(document.getElementById('root')!).render(
+seedIfEmpty().finally(() =>
+  createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <I18nProvider>
       <App />
     </I18nProvider>
   </StrictMode>,
+  ),
 )

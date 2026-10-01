@@ -1,3 +1,4 @@
+import { Barbell } from '@phosphor-icons/react'
 import { useEffect, useState } from 'react'
 import { photoUrl, type Exercise } from '../exercises'
 
@@ -20,13 +21,21 @@ export function ExercisePhoto({ ex, moving = false, className = '' }: Props) {
     return () => clearInterval(t)
   }, [animate])
 
+  if (ex.frames === 0) {
+    // the user's own exercise: no photo, so show its body-part colour
+    return (
+      <div className={`photo photo-none g-${ex.group} ${className}`} role="img" aria-label={ex.name}>
+        <Barbell size={32} weight="duotone" />
+      </div>
+    )
+  }
   if (!animate) {
     return <img className={`photo ${className}`} src={photoUrl(ex, 0)} alt={ex.name} loading="lazy" decoding="async" />
   }
   // both frames stay mounted so the switch never flashes while loading
   return (
     <div className={`photo photo-stack ${className}`} role="img" aria-label={ex.name}>
-      <img src={photoUrl(ex, 0)} alt="" className={frame === 0 ? 'on' : ''} />
+      <img src={photoUrl(ex, 0)} alt="" />
       <img src={photoUrl(ex, 1)} alt="" className={frame === 1 ? 'on' : ''} />
     </div>
   )

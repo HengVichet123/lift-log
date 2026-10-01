@@ -1,31 +1,43 @@
 import { useEffect, useState } from 'react'
 
+/** Where a picked exercise goes: a program day or one workout. */
+export type PickTarget = { kind: 'type'; id: string } | { kind: 'session'; id: number }
+
 export type Route =
-  | { name: 'today' }
-  | { name: 'pick' }
-  | { name: 'log'; id: string }
-  | { name: 'history' }
-  | { name: 'progress' }
-  | { name: 'progressDetail'; id: string }
+  | { name: 'home' }
+  | { name: 'day'; sessionId: number }
+  | { name: 'data'; typeId?: string }
+  | { name: 'exercise'; id: string }
+  | { name: 'program' }
+  | { name: 'programDay'; typeId: string }
+  | { name: 'pick'; target: PickTarget }
 
 function parse(hash: string): Route {
-  const [, a, b] = hash.replace(/^#/, '').split('/')
-  if (a === 'pick') return { name: 'pick' }
-  if (a === 'log' && b) return { name: 'log', id: decodeURIComponent(b) }
-  if (a === 'history') return { name: 'history' }
-  if (a === 'progress' && b) return { name: 'progressDetail', id: decodeURIComponent(b) }
-  if (a === 'progress') return { name: 'progress' }
-  return { name: 'today' }
+  const [, a, b, c] = hash.replace(/^#/, '').split('/').map(decodeURIComponent)
+  switch (a) {
+    case 'day': return b ? { name: 'day', sessionId: Number(b) } : { name: 'home' }
+    case 'data': return { name: 'data', typeId: b || undefined }
+    case 'ex': return b ? { name: 'exercise', id: b } : { name: 'data' }
+    case 'program': return b ? { name: 'programDay', typeId: b } : { name: 'program' }
+    case 'pick':
+      if (b === 'type' && c) return { name: 'pick', target: { kind: 'type', id: c } }
+      if (b === 'session' && c) return { name: 'pick', target: { kind: 'session', id: Number(c) } }
+      return { name: 'home' }
+    default: return { name: 'home' }
+  }
 }
+
+const enc = encodeURIComponent
 
 export function href(r: Route): string {
   switch (r.name) {
-    case 'today': return '#/'
-    case 'pick': return '#/pick'
-    case 'log': return `#/log/${encodeURIComponent(r.id)}`
-    case 'history': return '#/history'
-    case 'progress': return '#/progress'
-    case 'progressDetail': return `#/progress/${encodeURIComponent(r.id)}`
+    case 'home': return '#/'
+    case 'day': return `#/day/${r.sessionId}`
+    case 'data': return r.typeId ? `#/data/${enc(r.typeId)}` : '#/data'
+    case 'exercise': return `#/ex/${enc(r.id)}`
+    case 'program': return '#/program'
+    case 'programDay': return `#/program/${enc(r.typeId)}`
+    case 'pick': return `#/pick/${r.target.kind}/${enc(String(r.target.id))}`
   }
 }
 

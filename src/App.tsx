@@ -1,48 +1,41 @@
-import { Barbell, CalendarBlank, ChartLineUp } from '@phosphor-icons/react'
-import { useI18n } from './i18n'
-import { href, useRoute, type Route } from './router'
-import { History } from './screens/History'
-import { Log } from './screens/Log'
+import { BottomNav, type Tab } from './components/BottomNav'
+import { useRoute, type Route } from './router'
+import { Data } from './screens/Data'
+import { Day } from './screens/Day'
+import { ExerciseDetail } from './screens/ExerciseDetail'
+import { Home } from './screens/Home'
 import { Pick } from './screens/Pick'
-import { Progress, ProgressDetail } from './screens/Progress'
-import { Today } from './screens/Today'
+import { Program, ProgramDay } from './screens/Program'
 
 function Screen({ route }: { route: Route }) {
   switch (route.name) {
-    case 'today': return <Today />
-    case 'pick': return <Pick />
-    case 'log': return <Log key={route.id} id={route.id} />
-    case 'history': return <History />
-    case 'progress': return <Progress />
-    case 'progressDetail': return <ProgressDetail id={route.id} />
+    case 'home': return <Home />
+    case 'day': return <Day key={route.sessionId} sessionId={route.sessionId} />
+    case 'data': return <Data typeId={route.typeId} />
+    case 'exercise': return <ExerciseDetail id={route.id} />
+    case 'program': return <Program />
+    case 'programDay': return <ProgramDay typeId={route.typeId} />
+    case 'pick': return <Pick target={route.target} />
+  }
+}
+
+function tabOf(route: Route): Tab | null {
+  switch (route.name) {
+    case 'home': return 'home'
+    case 'data':
+    case 'exercise': return 'data'
+    case 'program': return 'program'
+    default: return null
   }
 }
 
 export default function App() {
   const route = useRoute()
-  const { t } = useI18n()
-  const tab = route.name === 'history' ? 'history' : route.name === 'progress' || route.name === 'progressDetail' ? 'progress' : 'today'
-  const showNav = route.name !== 'pick' && route.name !== 'log'
-
+  const tab = tabOf(route)
   return (
-    <div className={`app ${showNav ? 'has-nav' : ''}`}>
+    <div className={`app ${tab ? 'has-nav' : ''}`}>
       <Screen route={route} />
-      {showNav && (
-        <nav className="tabbar" aria-label="Main">
-          <a href={href({ name: 'today' })} aria-current={tab === 'today' ? 'page' : undefined}>
-            <Barbell size={28} weight={tab === 'today' ? 'fill' : 'regular'} />
-            <span>{t.today}</span>
-          </a>
-          <a href={href({ name: 'history' })} aria-current={tab === 'history' ? 'page' : undefined}>
-            <CalendarBlank size={28} weight={tab === 'history' ? 'fill' : 'regular'} />
-            <span>{t.history}</span>
-          </a>
-          <a href={href({ name: 'progress' })} aria-current={tab === 'progress' ? 'page' : undefined}>
-            <ChartLineUp size={28} weight={tab === 'progress' ? 'fill' : 'regular'} />
-            <span>{t.progress}</span>
-          </a>
-        </nav>
-      )}
+      {tab && <BottomNav tab={tab} />}
     </div>
   )
 }
