@@ -6,14 +6,13 @@ import { History } from './screens/History'
 import { Pick } from './screens/Pick'
 import { Progress } from './screens/Progress'
 import { Routine } from './screens/Routine'
-import { Summary } from './screens/Summary'
 import { Routines } from './screens/Routines'
 
 function Screen({ route }: { route: Route }) {
   switch (route.name) {
     case 'routines': return <Routines />
     case 'active': return <Active key={route.sessionId} sessionId={route.sessionId} />
-    case 'summary': return <Summary sessionId={route.sessionId} />
+    case 'summary': return <Active key={route.sessionId} sessionId={route.sessionId} />
     case 'history': return <History day={route.day} />
     case 'progress': return <Progress typeId={route.typeId} />
     case 'exercise': return <ExerciseDetail id={route.id} />

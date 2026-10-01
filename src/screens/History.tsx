@@ -1,7 +1,7 @@
-import { Barbell, CaretLeft, CaretRight, PencilSimple, Plus, Trash, Trophy } from '@phosphor-icons/react'
+import { Barbell, CaretLeft, CaretRight, Plus, Trash, Trophy } from '@phosphor-icons/react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { useMemo } from 'react'
-import { db, dayKey, finishedSessions, parseDay, workSets, type Session } from '../db'
+import { useMemo, useState } from 'react'
+import { db, dayKey, finishedSessions, newId, parseDay, workSets, type Session } from '../db'
 import { useExercises } from '../exercises'
 import { fmtSet, fmtVolume, topSet, volume } from '../format'
 import { useI18n } from '../i18n'
@@ -65,7 +65,7 @@ export function History({ day }: { day?: string }) {
 
   return (
     <main className="screen">
-      <ScreenHeader title={t.history} right={<HeaderTools />} />
+      <ScreenHeader title={t.recordTitle} right={<HeaderTools />} />
 
       <section className="cal">
         <div className="cal-head">
@@ -115,24 +115,22 @@ export function History({ day }: { day?: string }) {
             ))}
           </ul>
         )}
-        {(dayList.length === 0 || selected <= today) && (
+        {selected <= today && (
           <div className={`day-empty ${dayList.length ? 'after' : ''}`}>
             {dayList.length === 0 && <p className="muted">{t.noWorkoutDay}</p>}
-            {selected <= today && (
-              <>
-                <p className="field-label">{dayList.length ? t.addAnother : t.logForDay}</p>
-                <div className="chip-row">
-                  {(types ?? []).map((dt) => (
-                    <button type="button" key={dt.id} className="btn-chip" onClick={() => logForDay(selected, dt.id)}>
-                      <Plus size={16} weight="bold" />
-                      {dt.name}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
+            <p className="field-label">{dayList.length ? t.addAnother : t.recordThisDay}</p>
+            <div className="chip-row">
+              {(types ?? []).map((dt) => (
+                <button type="button" key={dt.id} className="btn-chip" onClick={() => logForDay(selected, dt.id)}>
+                  <Plus size={16} weight="bold" />
+                  {dt.name}
+                </button>
+              ))}
+            </div>
+            <NewRoutine />
           </div>
         )}
+        {selected > today && <p className="muted">{t.noWorkoutDay}</p>}
       </section>
     </main>
   )
@@ -150,7 +148,7 @@ function DayWorkout({ s, name }: { s: Session; name: string }) {
 
   return (
     <li className="h-card">
-      <button type="button" className="h-open" onClick={() => go({ name: 'summary', sessionId: s.id! })}>
+      <button type="button" className="h-open" onClick={() => go({ name: 'active', sessionId: s.id! })}>
         <span className="h-top">
           <span className="h-name">{name}</span>
         </span>
@@ -180,10 +178,6 @@ function DayWorkout({ s, name }: { s: Session; name: string }) {
         </span>
       </button>
       <span className="h-actions">
-        <button type="button" className="btn-chip" onClick={() => go({ name: 'active', sessionId: s.id! })}>
-          <PencilSimple size={16} />
-          {t.edit}
-        </button>
         <button
           type="button"
           className="btn-chip danger"
@@ -196,5 +190,39 @@ function DayWorkout({ s, name }: { s: Session; name: string }) {
         </button>
       </span>
     </li>
+  )
+}
+
+/** Make a new routine right from the day, then pick its exercises. */
+function NewRoutine() {
+  const { t } = useI18n()
+  const [open, setOpen] = useState(false)
+  const [name, setName] = useState('')
+  if (!open) {
+    return (
+      <button type="button" className="btn-dashed" onClick={() => setOpen(true)}>
+        <Plus size={16} weight="bold" />
+        {t.newRoutine}
+      </button>
+    )
+  }
+  return (
+    <form
+      className="inline-row"
+      onSubmit={async (e) => {
+        e.preventDefault()
+        const n = name.trim()
+        if (!n) return
+        const id = newId('d')
+        const order = (await db.dayTypes.toArray()).reduce((m, x) => Math.max(m, x.order), -1) + 1
+        await db.dayTypes.add({ id, name: n, order, exerciseIds: [] })
+        go({ name: 'routine', typeId: id })
+      }}
+    >
+      <input className="text-input" autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder={t.routineName} aria-label={t.routineName} />
+      <button type="submit" className="btn-chip strong" disabled={!name.trim()}>
+        {t.create}
+      </button>
+    </form>
   )
 }

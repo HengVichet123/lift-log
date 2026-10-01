@@ -1,9 +1,9 @@
 import { Copy, DotsThree, NotePencil, Plus, Trash, X } from '@phosphor-icons/react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useState } from 'react'
-import { db, dayKey, doneSets, parseDay, workSets, type Entry, type SetEntry } from '../db'
+import { db, dayKey, doneSets, parseDay, type Entry, type SetEntry } from '../db'
 import { useExercises, type Exercise } from '../exercises'
-import { fmtKg, fmtReps, fmtVolume, volume } from '../format'
+import { fmtKg, fmtReps } from '../format'
 import { useI18n } from '../i18n'
 import { go } from '../router'
 import { ExercisePhoto } from '../components/ExercisePhoto'
@@ -49,7 +49,6 @@ export function Active({ sessionId }: { sessionId: number }) {
 
   if (!data) return <main className="screen" />
   const { session, type, entries } = data
-  const all = entries.flatMap(workSets)
 
   const close = async () => {
     // an empty day (opened by mistake) is not kept
@@ -67,9 +66,6 @@ export function Active({ sessionId }: { sessionId: number }) {
           <span className="active-name">{type?.name ?? t.workout}</span>
           <span className="active-stats">
             <span>{date(parseDay(session.date), 'medium')}</span>
-            <span>
-              {fmtVolume(volume(all))} {t.kg}
-            </span>
           </span>
         </div>
         <button type="button" className="btn-finish" onClick={close}>

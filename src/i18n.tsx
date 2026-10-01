@@ -11,7 +11,9 @@ const ordinal = (n: number) => {
 
 const en = {
   workout: 'Workout',
-  history: 'History',
+  history: 'Record',
+  recordTitle: 'Record workout',
+  recordThisDay: 'Record a workout',
   progress: 'Progress',
   routines: 'Routines',
   start: 'Start',
@@ -61,7 +63,7 @@ const en = {
   noWorkoutDay: 'No workout on this day',
   logForDay: 'Log a workout for this day',
   deleteBtn: 'Delete',
-  addAnother: 'Add another workout on this day',
+  addAnother: 'Record another workout',
   copyLast: 'Same as last time',
   notFoundWorkout: 'This workout no longer exists. It may have been deleted.',
   notFoundExercise: 'This exercise could not be found.',
