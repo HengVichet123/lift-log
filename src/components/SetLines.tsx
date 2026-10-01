@@ -8,7 +8,8 @@ export function SetLines({ sets, className = '' }: { sets: SetEntry[]; className
   return (
     <span className={`set-lines ${className}`}>
       {groupSets(sets).map((g, i) => (
-        <span key={i} className="set-line">
+        <span key={i} className={`set-line ${g.warmup ? 'is-warmup' : ''}`}>
+          {g.warmup && <span className="w-tag">{t.warmupShort}</span>}
           <b>{g.w > 0 ? fmtKg(g.w) : t.bw}</b>
           <span className="x">×</span>
           {g.reps.join(', ')}

@@ -23,12 +23,14 @@ async function addTo(target: PickTarget, exerciseId: string) {
   if (target.kind === 'type') {
     const dt = await db.dayTypes.get(target.id)
     if (dt && !dt.exerciseIds.includes(exerciseId)) await db.dayTypes.update(target.id, { exerciseIds: [...dt.exerciseIds, exerciseId] })
-  } else {
-    const s = await db.sessions.get(target.id)
-    if (!s) return
-    const has = await db.entries.where('sessionId').equals(target.id).filter((e) => e.exerciseId === exerciseId).count()
-    if (!has) await db.entries.add({ sessionId: target.id, date: s.date, exerciseId, order: 1000 + Date.now() % 100000, sets: [], note: '' })
+    return
   }
+  const s = await db.sessions.get(target.id)
+  if (!s) return
+  const entries = await db.entries.where('sessionId').equals(target.id).toArray()
+  if (entries.some((e) => e.exerciseId === exerciseId)) return
+  const order = entries.reduce((m, e) => Math.max(m, e.order), -1) + 1
+  await db.entries.add({ sessionId: target.id, date: s.date, exerciseId, order, sets: [{ w: 0, r: 0 }, { w: 0, r: 0 }, { w: 0, r: 0 }], note: '' })
 }
 
 export function Pick({ target }: { target: PickTarget }) {
@@ -56,33 +58,25 @@ export function Pick({ target }: { target: PickTarget }) {
 
   const choose = async (id: string) => {
     await addTo(target, id)
-    back({ name: 'home' })
-  }
-
-  const createOwn = async () => {
-    const name = ownName.trim()
-    if (!name) return
-    const id = newId('c')
-    await db.customExercises.add({ id, name, group })
-    await choose(id)
+    back({ name: 'workout' })
   }
 
   return (
     <main className="screen">
-      <ScreenHeader title={t.pickExercise} onBack={() => back({ name: 'home' })} />
+      <ScreenHeader title={t.pickExercise} onBack={() => back({ name: 'workout' })} />
 
       <div className="search">
-        <MagnifyingGlass size={22} aria-hidden />
+        <MagnifyingGlass size={20} aria-hidden />
         <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t.search} aria-label={t.search} />
         {q && (
-          <button type="button" className="icon-btn" onClick={() => setQ('')} aria-label="Clear">
-            <X size={20} />
+          <button type="button" className="icon-btn small" onClick={() => setQ('')} aria-label="Clear">
+            <X size={18} />
           </button>
         )}
       </div>
 
       {!query && (
-        <nav className="groups" aria-label={t.ownGroup}>
+        <nav className="groups" aria-label="Body part">
           {GROUPS.map((g) => (
             <button type="button" key={g} className={`group-tab g-${g}`} aria-pressed={g === group} onClick={() => setGroup(g)}>
               <ExercisePhoto ex={catalogExercise(GROUP_COVER[g])!} className="group-photo" />
@@ -95,12 +89,16 @@ export function Pick({ target }: { target: PickTarget }) {
       {list.length === 0 ? (
         <p className="empty-hint pad">{t.noMatch}</p>
       ) : (
-        <ul className="grid">
+        <ul className="pick-list">
           {list.map((ex) => (
             <li key={ex.id}>
-              <button type="button" className={`card g-${ex.group}`} onClick={() => choose(ex.id)}>
-                <ExercisePhoto ex={ex} />
-                <span className="card-name">{ex.name}</span>
+              <button type="button" className="pick-row" onClick={() => choose(ex.id)}>
+                <ExercisePhoto ex={ex} className="pick-photo" />
+                <span className="pick-text">
+                  <span className="ex-name">{ex.name}</span>
+                  <span className="muted">{t.groups[ex.group]}</span>
+                </span>
+                <Plus size={22} weight="bold" className="pick-plus" />
               </button>
             </li>
           ))}
@@ -115,9 +113,13 @@ export function Pick({ target }: { target: PickTarget }) {
 
       <form
         className="inline-form own"
-        onSubmit={(e) => {
+        onSubmit={async (e) => {
           e.preventDefault()
-          createOwn()
+          const name = ownName.trim()
+          if (!name) return
+          const id = newId('c')
+          await db.customExercises.add({ id, name, group })
+          await choose(id)
         }}
       >
         <label className="field-label" htmlFor="own-name">

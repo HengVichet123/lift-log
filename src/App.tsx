@@ -1,30 +1,32 @@
 import { BottomNav, type Tab } from './components/BottomNav'
 import { useRoute, type Route } from './router'
-import { Data } from './screens/Data'
-import { Day } from './screens/Day'
+import { Active } from './screens/Active'
 import { ExerciseDetail } from './screens/ExerciseDetail'
-import { Home } from './screens/Home'
+import { History } from './screens/History'
 import { Pick } from './screens/Pick'
-import { Program, ProgramDay } from './screens/Program'
+import { Progress } from './screens/Progress'
+import { Routine } from './screens/Routine'
+import { Summary } from './screens/Summary'
+import { Workout } from './screens/Workout'
 
 function Screen({ route }: { route: Route }) {
   switch (route.name) {
-    case 'home': return <Home />
-    case 'day': return <Day key={route.sessionId} sessionId={route.sessionId} />
-    case 'data': return <Data typeId={route.typeId} />
+    case 'workout': return <Workout />
+    case 'active': return <Active key={route.sessionId} sessionId={route.sessionId} />
+    case 'summary': return <Summary sessionId={route.sessionId} />
+    case 'history': return <History />
+    case 'progress': return <Progress typeId={route.typeId} />
     case 'exercise': return <ExerciseDetail id={route.id} />
-    case 'program': return <Program />
-    case 'programDay': return <ProgramDay typeId={route.typeId} />
+    case 'routine': return <Routine typeId={route.typeId} />
     case 'pick': return <Pick target={route.target} />
   }
 }
 
 function tabOf(route: Route): Tab | null {
   switch (route.name) {
-    case 'home': return 'home'
-    case 'data':
-    case 'exercise': return 'data'
-    case 'program': return 'program'
+    case 'workout': return 'workout'
+    case 'history': return 'history'
+    case 'progress': return 'progress'
     default: return null
   }
 }

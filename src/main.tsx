@@ -11,6 +11,9 @@ import './index.css'
 import App from './App.tsx'
 import { seedIfEmpty } from './defaults'
 import { I18nProvider } from './i18n'
+import { applyTheme, getTheme } from './theme'
+
+applyTheme(getTheme())
 
 seedIfEmpty().finally(() =>
   createRoot(document.getElementById('root')!).render(

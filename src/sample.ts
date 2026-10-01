@@ -60,18 +60,23 @@ export async function loadSample() {
       const date = dayKey(d)
       const type = order[k++ % 3]
       const n = count[type]++
-      const sessionId = (await db.sessions.add({ date, dayTypeId: type, createdAt: d.getTime(), sample: true })) as number
+      const start = new Date(d)
+      start.setHours(18, Math.floor(rand() * 40), 0, 0)
+      const startedAt = start.getTime()
+      const finishedAt = startedAt + (45 + Math.floor(rand() * 30)) * 60_000
+      const sessionId = (await db.sessions.add({ date, dayTypeId: type, createdAt: startedAt, startedAt, finishedAt, sample: true })) as number
 
       for (const [i, p] of PLANS[type].entries()) {
         const w = p.start + Math.floor(n / p.every) * p.step
         const sets: SetEntry[] = p.reps.map((r, j) => {
           const reps = Math.max(1, r + Math.round((rand() - 0.5) * 2))
-          const s: SetEntry = { w, r: reps }
+          const s: SetEntry = { w, r: reps, done: true }
           if (p.range && j > 0 && rand() < 0.5) s.rTo = reps + 1
           if (p.assist && j === 2 && rand() < 0.6) s.assist = 2 + Math.floor(rand() * 3)
           return s
         })
-        if (rand() < 0.25) sets.unshift({ w: w + p.step, r: Math.max(1, p.reps[0] - 3) }) // a heavy top set
+        if (rand() < 0.25) sets.unshift({ w: w + p.step, r: Math.max(1, p.reps[0] - 3), done: true }) // a heavy top set
+        if (i === 0) sets.unshift({ w: Math.round((w * 0.5) / 2.5) * 2.5, r: 10, warmup: true, done: true })
         const note = rand() < 0.08 ? NOTES[Math.floor(rand() * NOTES.length)] : ''
         await db.entries.add({ sessionId, date, exerciseId: p.id, order: i, sets, note })
       }
