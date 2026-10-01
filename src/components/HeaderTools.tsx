@@ -2,9 +2,8 @@ import { Moon, Sun } from '@phosphor-icons/react'
 import { useState } from 'react'
 import { useI18n } from '../i18n'
 import { applyTheme, getTheme } from '../theme'
-import { LangSwitch } from './LangSwitch'
 
-/** Language and light/dark, shown at the top right of each main tab. */
+/** Light/dark switch, shown at the top right of each main tab. */
 export function HeaderTools() {
   const { t } = useI18n()
   const [theme, setTheme] = useState(getTheme)
@@ -22,7 +21,6 @@ export function HeaderTools() {
       >
         {theme === 'dark' ? <Sun size={22} /> : <Moon size={22} />}
       </button>
-      <LangSwitch />
     </div>
   )
 }
