@@ -671,5 +671,3 @@ button:disabled { cursor: default; opacity: 0.4; }
 
 .date-edit { display: flex; align-items: center; gap: 10px; color: var(--ink-2); font-weight: 600; font-size: 14px; }
 .date-edit input { min-height: 42px; padding: 0 10px; border: 1px solid var(--line); border-radius: var(--r-in); background: var(--surface); color: var(--ink); }
-.past { display: flex; flex-direction: column; gap: 6px; }
-.past .muted { margin: 0; text-align: center; }
