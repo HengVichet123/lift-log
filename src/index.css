@@ -725,3 +725,43 @@ button:disabled { cursor: default; opacity: 0.4; }
 .swipe-content { position: relative; background: var(--surface); touch-action: pan-y; transition: transform 200ms ease-out; }
 .swipe-content.dragging { transition: none; }
 @media (prefers-reduced-motion: reduce) { .swipe-content { transition: none; } }
+
+/* ---------- workout card on a day ---------- */
+
+.history-list .h-card { border-radius: var(--r-card); }
+.w-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  border-left: 6px solid var(--accent);
+  border-radius: var(--r-card);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 22%, var(--surface)) 0%, var(--surface) 70%);
+  text-align: left;
+}
+.w-card:active { filter: brightness(1.08); }
+.w-head { display: flex; align-items: center; gap: 10px; }
+.w-check { color: var(--done); flex: none; }
+.w-title { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.w-name { font: 700 28px/1.05 var(--font-num); }
+.w-meta { color: var(--ink-2); font-size: 14px; }
+.w-pr { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 999px; background: color-mix(in srgb, var(--gold) 20%, transparent); color: var(--gold); font-weight: 700; font-size: 14px; }
+.w-go { color: var(--ink-2); flex: none; }
+.w-rows { display: flex; flex-direction: column; gap: 6px; padding-top: 10px; border-top: 1px solid var(--line); }
+.w-row { display: flex; align-items: center; gap: 10px; }
+.avatar.sm { width: 30px; height: 30px; }
+.w-ex { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; }
+.w-best { font: 700 17px/1 var(--font-num); white-space: nowrap; }
+.swipe-content:has(.w-card) { background: transparent; }
+
+/* ---------- read-only view ---------- */
+
+.view-meta { margin: -6px 0 0; color: var(--ink-2); }
+.view-list { display: flex; flex-direction: column; gap: 10px; }
+.view-ex { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-left: 5px solid var(--g); border-radius: var(--r-card); background: var(--surface); }
+.view-ex-head { display: flex; align-items: center; gap: 12px; padding: 0; border: 0; background: transparent; text-align: left; }
+.view-ex-head .ex-name { flex: 1; }
+.view-sets { padding-left: 56px; font-size: 19px; }
+.view-note { margin: 0; padding-left: 56px; color: var(--ink-2); font-size: 14px; }

@@ -1,35 +1,17 @@
-import { Barbell, CaretLeft, CaretRight, Plus, Trophy } from '@phosphor-icons/react'
+import { CaretLeft, CaretRight, CheckCircle, Plus, Trophy } from '@phosphor-icons/react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useMemo, useState } from 'react'
 import { db, dayKey, finishedSessions, newId, parseDay, workSets, type Session } from '../db'
 import { useExercises } from '../exercises'
 import { fmtSet, fmtVolume, topSet, volume } from '../format'
 import { useI18n } from '../i18n'
+import { deleteSession, logForDay } from '../workouts'
 import { sessionRecords } from '../records'
 import { go } from '../router'
+import { ExercisePhoto } from '../components/ExercisePhoto'
 import { HeaderTools } from '../components/HeaderTools'
 import { SwipeRow } from '../components/SwipeRow'
 import { ScreenHeader } from '../components/ScreenHeader'
-
-/** Add a finished workout on a past (or any) day and open it for editing. */
-async function logForDay(day: string, dayTypeId: string) {
-  const type = await db.dayTypes.get(dayTypeId)
-  const start = parseDay(day)
-  start.setHours(18, 0, 0, 0)
-  const startedAt = start.getTime()
-  const sessionId = (await db.sessions.add({ date: day, dayTypeId, createdAt: Date.now(), startedAt, finishedAt: startedAt + 3_600_000 })) as number
-  for (const [order, exerciseId] of (type?.exerciseIds ?? []).entries()) {
-    await db.entries.add({ sessionId, date: day, exerciseId, order, sets: [{ w: 0, r: 0 }, { w: 0, r: 0 }, { w: 0, r: 0 }], note: '' })
-  }
-  go({ name: 'active', sessionId })
-}
-
-async function deleteSession(id: number) {
-  await db.transaction('rw', db.entries, db.sessions, async () => {
-    await db.entries.where('sessionId').equals(id).delete()
-    await db.sessions.delete(id)
-  })
-}
 
 function monthGrid(year: number, month: number): (Date | null)[] {
   const first = new Date(year, month, 1)
@@ -155,30 +137,31 @@ function DayWorkout({ s, name }: { s: Session; name: string }) {
           if (confirm(t.deleteWorkoutConfirm)) deleteSession(s.id!)
         }}
       >
-        <button type="button" className="h-open" onClick={() => go({ name: 'active', sessionId: s.id! })}>
-          <span className="h-top">
-            <span className="h-name">{name}</span>
-          </span>
-          <span className="h-stats">
-            <span>
-              <Barbell size={16} /> {fmtVolume(volume(sets))} {t.kg}
+        <button type="button" className="w-card" onClick={() => go({ name: 'summary', sessionId: s.id! })}>
+          <span className="w-head">
+            <CheckCircle size={28} weight="fill" className="w-check" />
+            <span className="w-title">
+              <span className="w-name">{name}</span>
+              <span className="w-meta">
+                {t.exercisesCount(entries.length)} · {sets.length} {t.setsWord.toLowerCase()} · {fmtVolume(volume(sets))} {t.kg}
+              </span>
             </span>
             {!!data?.prs && (
-              <span className="h-pr">
+              <span className="w-pr">
                 <Trophy size={16} weight="fill" /> {data.prs}
               </span>
             )}
+            <CaretRight size={20} weight="bold" className="w-go" />
           </span>
-          <span className="h-table">
+          <span className="w-rows">
             {entries.map((e) => {
               const ex = lookup(e.exerciseId)
               const best = topSet(workSets(e))
               return ex ? (
-                <span key={e.id} className="h-row">
-                  <span className="h-ex">
-                    {e.sets.length} × {ex.name}
-                  </span>
-                  <span className="h-best">{best ? fmtSet(best, t.bw) : ''}</span>
+                <span key={e.id} className={`w-row g-${ex.group}`}>
+                  <ExercisePhoto ex={ex} className="avatar sm" />
+                  <span className="w-ex">{ex.name}</span>
+                  <span className="w-best">{best ? fmtSet(best, t.bw) : ''}</span>
                 </span>
               ) : null
             })}
