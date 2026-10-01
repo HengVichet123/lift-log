@@ -1,10 +1,11 @@
-import { CaretRight, Plus, Trash } from '@phosphor-icons/react'
+import { CaretRight, DownloadSimple, Plus, Trash, UploadSimple } from '@phosphor-icons/react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
 import { db, newId } from '../db'
 import { useExercises } from '../exercises'
 import { useI18n } from '../i18n'
 import { go } from '../router'
+import { restoreBackup, saveBackup } from '../backup'
 import { clearSample, hasSample, loadSample } from '../sample'
 import { ExercisePhoto } from '../components/ExercisePhoto'
 import { HeaderTools } from '../components/HeaderTools'
@@ -17,6 +18,7 @@ export function Routines() {
   const types = useLiveQuery(() => db.dayTypes.orderBy('order').toArray(), [])
   const sample = useLiveQuery(hasSample, [])
   const [name, setName] = useState('')
+  const [backupMsg, setBackupMsg] = useState('')
 
   const addRoutine = async () => {
     const n = name.trim()
@@ -72,6 +74,52 @@ export function Routines() {
           </button>
         </div>
       </form>
+
+      <section className="sample">
+        <h2 className="section-title">{t.backupTitle}</h2>
+        <p className="muted">{t.backupHint}</p>
+        <div className="chip-row">
+          <button
+            type="button"
+            className="btn-quiet"
+            onClick={async () => {
+              try {
+                await saveBackup()
+                setBackupMsg(t.backupSaved)
+              } catch {
+                setBackupMsg('')
+              }
+            }}
+          >
+            <DownloadSimple size={20} />
+            {t.backupSave}
+          </button>
+          <label className="btn-quiet">
+            <UploadSimple size={20} />
+            {t.backupRestore}
+            <input
+              type="file"
+              accept="application/json,.json"
+              hidden
+              onChange={async (e) => {
+                const f = e.target.files?.[0]
+                e.target.value = ''
+                if (!f || !confirm(t.backupRestoreConfirm)) return
+                try {
+                  setBackupMsg(t.backupRestored(await restoreBackup(f)))
+                } catch {
+                  setBackupMsg(t.backupBad)
+                }
+              }}
+            />
+          </label>
+        </div>
+        {backupMsg && (
+          <p className="muted" role="status">
+            {backupMsg}
+          </p>
+        )}
+      </section>
 
       <section className="sample">
         <h2 className="section-title">{t.sampleTitle}</h2>

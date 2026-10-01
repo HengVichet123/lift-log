@@ -7,11 +7,13 @@ import '@fontsource/barlow-condensed/latin-600.css'
 import '@fontsource/barlow-condensed/latin-700.css'
 import './index.css'
 import App from './App.tsx'
+import { keepDataPermanently } from './backup'
 import { seedIfEmpty } from './defaults'
 import { I18nProvider } from './i18n'
 import { applyTheme, getTheme } from './theme'
 
 applyTheme(getTheme())
+keepDataPermanently()
 
 seedIfEmpty().finally(() =>
   createRoot(document.getElementById('root')!).render(
