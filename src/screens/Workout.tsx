@@ -3,9 +3,8 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
 import { activeSession, db, dayKey, daysBetween, finishedSessions, newId } from '../db'
 import { useExercises } from '../exercises'
-import { fmtClock } from '../format'
 import { useI18n } from '../i18n'
-import { go, useTick } from '../router'
+import { go } from '../router'
 import { clearSample, hasSample, loadSample } from '../sample'
 import { ExercisePhoto } from '../components/ExercisePhoto'
 import { HeaderTools } from '../components/HeaderTools'
@@ -38,7 +37,6 @@ export async function startRoutine(dayTypeId: string) {
 export function Workout() {
   const { t } = useI18n()
   const lookup = useExercises()
-  const now = useTick(1000)
   const today = dayKey()
   const types = useLiveQuery(() => db.dayTypes.orderBy('order').toArray(), [])
   const running = useLiveQuery(activeSession, [])
@@ -69,7 +67,6 @@ export function Workout() {
             <span className="resume-label">{t.inProgress}</span>
             <span className="resume-name">{types?.find((x) => x.id === running.dayTypeId)?.name}</span>
           </span>
-          <span className="resume-clock">{fmtClock(now - running.startedAt)}</span>
           <span className="resume-go">{t.resume}</span>
         </button>
       )}

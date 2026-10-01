@@ -2,7 +2,7 @@ import { PencilSimple, Trophy } from '@phosphor-icons/react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, doneSets, finishedSessions, parseDay, workSets } from '../db'
 import { useExercises } from '../exercises'
-import { fmtDuration, fmtSet, fmtVolume, topSet, volume } from '../format'
+import { fmtSet, fmtVolume, topSet, volume } from '../format'
 import { useI18n } from '../i18n'
 import { sessionRecords } from '../records'
 import { back, go } from '../router'
@@ -49,10 +49,6 @@ export function Summary({ sessionId }: { sessionId: number }) {
       <section className="summary-hero">
         <p className="summary-nth">{nth > 0 ? t.nth(nth) : t.complete}</p>
         <div className="stat-row">
-          <div className="stat">
-            <span className="stat-val">{fmtDuration((session.finishedAt ?? Date.now()) - session.startedAt)}</span>
-            <span className="stat-label">{t.duration}</span>
-          </div>
           <div className="stat">
             <span className="stat-val">
               {fmtVolume(volume(sets))} <small>{t.kg}</small>

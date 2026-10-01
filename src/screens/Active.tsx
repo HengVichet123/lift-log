@@ -3,12 +3,10 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useEffect, useState } from 'react'
 import { db, doneSets, workSets, type Entry, type SetEntry } from '../db'
 import { useExercises, type Exercise } from '../exercises'
-import { fmtClock, fmtKg, fmtReps, fmtVolume, volume } from '../format'
+import { fmtKg, fmtReps, fmtVolume, volume } from '../format'
 import { useI18n } from '../i18n'
-import { rest } from '../rest'
-import { back, go, useTick } from '../router'
+import { back, go } from '../router'
 import { ExercisePhoto } from '../components/ExercisePhoto'
-import { RestBar } from '../components/RestBar'
 
 /** Keep only ticked sets; drop exercises with nothing left. */
 async function tidy(sessionId: number, editing: boolean) {
@@ -24,7 +22,6 @@ async function tidy(sessionId: number, editing: boolean) {
 export function Active({ sessionId }: { sessionId: number }) {
   const { t } = useI18n()
   const lookup = useExercises()
-  const now = useTick(1000)
   const data = useLiveQuery(async () => {
     const session = await db.sessions.get(sessionId)
     if (!session) return null
@@ -50,7 +47,6 @@ export function Active({ sessionId }: { sessionId: number }) {
         await db.entries.where('sessionId').equals(sessionId).delete()
         await db.sessions.delete(sessionId)
       })
-      rest.stop()
       go({ name: 'workout' }, true)
       return
     }
@@ -58,7 +54,6 @@ export function Active({ sessionId }: { sessionId: number }) {
       await tidy(sessionId, editing)
       if (!editing) await db.sessions.update(sessionId, { finishedAt: Date.now() })
     })
-    rest.stop()
     go({ name: 'summary', sessionId }, true)
   }
 
@@ -71,7 +66,6 @@ export function Active({ sessionId }: { sessionId: number }) {
         <div className="active-title">
           <span className="active-name">{type?.name ?? '?'}</span>
           <span className="active-stats">
-            {!editing && <b>{fmtClock(now - session.startedAt)}</b>}
             <span>
               {fmtVolume(volume(all))} {t.kg}
             </span>
@@ -106,7 +100,7 @@ export function Active({ sessionId }: { sessionId: number }) {
       <ul className="active-list">
         {entries.map((e) => {
           const ex = lookup(e.exerciseId)
-          return ex ? <ExerciseCard key={e.id} ex={ex} entry={e} sessionDate={session.date} editing={editing} /> : null
+          return ex ? <ExerciseCard key={e.id} ex={ex} entry={e} sessionDate={session.date} /> : null
         })}
       </ul>
 
@@ -124,20 +118,18 @@ export function Active({ sessionId }: { sessionId: number }) {
             await db.entries.where('sessionId').equals(sessionId).delete()
             await db.sessions.delete(sessionId)
           })
-          rest.stop()
-          go({ name: 'workout' }, true)
+              go({ name: 'workout' }, true)
         }}
       >
         <Trash size={20} />
         {editing ? t.deleteWorkout : t.cancelWorkout}
       </button>
 
-      {!editing && <RestBar />}
     </main>
   )
 }
 
-function ExerciseCard({ ex, entry, sessionDate, editing }: { ex: Exercise; entry: Entry; sessionDate: string; editing: boolean }) {
+function ExerciseCard({ ex, entry, sessionDate }: { ex: Exercise; entry: Entry; sessionDate: string }) {
   const { t } = useI18n()
   const [menu, setMenu] = useState(false)
   const [noteOpen, setNoteOpen] = useState(!!entry.note)
@@ -172,7 +164,6 @@ function ExerciseCard({ ex, entry, sessionDate, editing }: { ex: Exercise; entry
     if (r <= 0) return
     update(i, { w, r, rTo: s.rTo ?? h?.rTo, assist: s.assist ?? h?.assist, done: true })
     navigator.vibrate?.(20)
-    if (!editing) rest.start()
   }
 
   let n = 0

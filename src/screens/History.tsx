@@ -1,9 +1,9 @@
-import { Barbell, CaretLeft, CaretRight, Clock, PencilSimple, Plus, Trash, Trophy } from '@phosphor-icons/react'
+import { Barbell, CaretLeft, CaretRight, PencilSimple, Plus, Trash, Trophy } from '@phosphor-icons/react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useMemo } from 'react'
 import { db, dayKey, finishedSessions, parseDay, workSets, type Session } from '../db'
 import { useExercises } from '../exercises'
-import { fmtDuration, fmtSet, fmtVolume, topSet, volume } from '../format'
+import { fmtSet, fmtVolume, topSet, volume } from '../format'
 import { useI18n } from '../i18n'
 import { sessionRecords } from '../records'
 import { go } from '../router'
@@ -154,9 +154,6 @@ function DayWorkout({ s, name }: { s: Session; name: string }) {
           <span className="h-name">{name}</span>
         </span>
         <span className="h-stats">
-          <span>
-            <Clock size={16} /> {fmtDuration(s.finishedAt! - s.startedAt)}
-          </span>
           <span>
             <Barbell size={16} /> {fmtVolume(volume(sets))} {t.kg}
           </span>

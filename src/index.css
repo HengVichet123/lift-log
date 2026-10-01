@@ -484,7 +484,7 @@ button:disabled { cursor: default; opacity: 0.4; }
 
 .summary-hero { padding: 16px; border-radius: var(--r-card); background: var(--surface); }
 .summary-nth { margin: 0 0 10px; font: 700 24px/1.1 var(--font-num); }
-.stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.stat-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
 .stat { display: flex; flex-direction: column; }
 .stat-val { font: 700 22px/1.1 var(--font-num); font-variant-numeric: tabular-nums; }
 .stat-val small { font-size: 14px; color: var(--ink-2); }
