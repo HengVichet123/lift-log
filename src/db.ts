@@ -30,6 +30,8 @@ export interface Session {
   date: string
   dayTypeId: string
   createdAt: number
+  /** made by "Load sample data", so it can be removed again */
+  sample?: boolean
 }
 
 /** What was done for one exercise in one workout. */

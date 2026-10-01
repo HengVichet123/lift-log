@@ -1,8 +1,9 @@
-import { ArrowDown, ArrowUp, CaretRight, PencilSimple, Plus, Trash } from '@phosphor-icons/react'
+import { ArrowDown, ArrowUp, CaretRight, Database, PencilSimple, Plus, Trash } from '@phosphor-icons/react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
 import { db, newId, type DayType } from '../db'
 import { useExercises } from '../exercises'
+import { clearSample, hasSample, loadSample } from '../sample'
 import { useI18n } from '../i18n'
 import { back, go } from '../router'
 import { ExercisePhoto } from '../components/ExercisePhoto'
@@ -22,6 +23,7 @@ export function Program() {
   const { t } = useI18n()
   const types = useLiveQuery(() => db.dayTypes.orderBy('order').toArray(), [])
   const [name, setName] = useState('')
+  const sample = useLiveQuery(hasSample, [])
 
   const add = async () => {
     const n = name.trim()
@@ -73,6 +75,29 @@ export function Program() {
           </button>
         </div>
       </form>
+
+      <section className="sample">
+        <h2 className="section-title">{t.sampleTitle}</h2>
+        <p className="muted">{t.sampleHint}</p>
+        {sample ? (
+          <button type="button" className="btn-danger-quiet" onClick={clearSample}>
+            <Trash size={20} />
+            {t.sampleClear}
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="btn-quiet"
+            onClick={async () => {
+              await loadSample()
+              go({ name: 'data' })
+            }}
+          >
+            <Database size={20} />
+            {t.sampleLoad}
+          </button>
+        )}
+      </section>
     </main>
   )
 }

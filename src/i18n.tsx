@@ -57,6 +57,10 @@ const en = {
   language: 'Language',
   all: 'All',
   bw: 'BW',
+  sampleTitle: 'Sample data',
+  sampleHint: 'Fill the app with 8 weeks of example Push, Pull and Legs workouts to see how it looks. Your own workouts are not touched.',
+  sampleLoad: 'Load sample data',
+  sampleClear: 'Remove sample data',
   groups: {
     chest: 'Chest',
     back: 'Back',
@@ -123,6 +127,10 @@ const km: Dict = {
   language: 'ភាសា',
   all: 'ទាំងអស់',
   bw: 'ខ្លួន',
+  sampleTitle: 'ទិន្នន័យគំរូ',
+  sampleHint: 'បំពេញកម្មវិធីដោយការហាត់គំរូ 8 សប្តាហ៍ ដើម្បីមើលរូបរាង។ ការហាត់របស់អ្នកមិនត្រូវបានប៉ះពាល់ទេ។',
+  sampleLoad: 'បញ្ចូលទិន្នន័យគំរូ',
+  sampleClear: 'លុបទិន្នន័យគំរូ',
   groups: {
     chest: 'ទ្រូង',
     back: 'ខ្នង',
