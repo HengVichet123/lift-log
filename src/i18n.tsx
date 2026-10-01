@@ -53,6 +53,16 @@ const en = {
   done: 'Done',
   edit: 'Edit',
   bestSet: 'Best set',
+  weekdaysShort: ['M', 'T', 'W', 'T', 'F', 'S', 'S'],
+  dateLabel: 'Date',
+  addPast: 'Add a past workout',
+  addPastHint: 'Forgot to log a day? Pick the day on the calendar and fill it in.',
+  prevMonth: 'Previous month',
+  nextMonth: 'Next month',
+  todayBtn: 'Today',
+  noWorkoutDay: 'No workout on this day',
+  logForDay: 'Log a workout for this day',
+  deleteBtn: 'Delete',
   emptyHistory: 'No workouts yet',
   emptyHistoryHint: 'Start a routine on the Workout tab',
   weekly: 'Workouts per week',
@@ -141,6 +151,16 @@ const km: Dict = {
   done: 'រួចរាល់',
   edit: 'កែ',
   bestSet: 'ឈុតល្អបំផុត',
+  weekdaysShort: ['ច', 'អ', 'ព', 'ព្រ', 'សុ', 'ស', 'អា'],
+  dateLabel: 'កាលបរិច្ឆេទ',
+  addPast: 'បន្ថែមការហាត់ថ្ងៃមុន',
+  addPastHint: 'ភ្លេចកត់ត្រាថ្ងៃណាមួយ? ជ្រើសថ្ងៃនោះនៅលើប្រតិទិន ហើយបំពេញ។',
+  prevMonth: 'ខែមុន',
+  nextMonth: 'ខែក្រោយ',
+  todayBtn: 'ថ្ងៃនេះ',
+  noWorkoutDay: 'គ្មានការហាត់នៅថ្ងៃនេះ',
+  logForDay: 'កត់ត្រាការហាត់សម្រាប់ថ្ងៃនេះ',
+  deleteBtn: 'លុប',
   emptyHistory: 'មិនទាន់មានការហាត់',
   emptyHistoryHint: 'ចាប់ផ្តើមកម្មវិធីនៅផ្ទាំង ហាត់',
   weekly: 'ការហាត់ក្នុងមួយសប្តាហ៍',
@@ -196,7 +216,7 @@ function initialLang(): Lang {
   return 'en'
 }
 
-export type DateStyle = 'long' | 'medium' | 'short'
+export type DateStyle = 'long' | 'medium' | 'short' | 'month'
 
 const KM_MONTHS = ['មករា', 'កុម្ភៈ', 'មីនា', 'មេសា', 'ឧសភា', 'មិថុនា', 'កក្កដា', 'សីហា', 'កញ្ញា', 'តុលា', 'វិច្ឆិកា', 'ធ្នូ']
 const KM_DAYS = ['អាទិត្យ', 'ចន្ទ', 'អង្គារ', 'ពុធ', 'ព្រហស្បតិ៍', 'សុក្រ', 'សៅរ៍']
@@ -205,11 +225,13 @@ const EN_FMT: Record<DateStyle, Intl.DateTimeFormat> = {
   long: new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }),
   medium: new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'long' }),
   short: new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' }),
+  month: new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric' }),
 }
 
 /** Browsers format km-KH poorly ("M10 2, Fri"), so Khmer dates are built by hand. */
 function formatDate(lang: Lang, d: Date, style: DateStyle): string {
   if (lang === 'en') return EN_FMT[style].format(d)
+  if (style === 'month') return `${KM_MONTHS[d.getMonth()]} ${d.getFullYear()}`
   const dm = `${d.getDate()} ${KM_MONTHS[d.getMonth()]}`
   if (style === 'short') return dm
   return `${style === 'long' ? 'ថ្ងៃ' : ''}${KM_DAYS[d.getDay()]} ${dm}`

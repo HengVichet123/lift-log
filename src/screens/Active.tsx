@@ -11,12 +11,13 @@ import { ExercisePhoto } from '../components/ExercisePhoto'
 import { RestBar } from '../components/RestBar'
 
 /** Keep only ticked sets; drop exercises with nothing left. */
-async function tidy(sessionId: number) {
+async function tidy(sessionId: number, editing: boolean) {
   const entries = await db.entries.where('sessionId').equals(sessionId).toArray()
   for (const e of entries) {
-    const sets = doneSets(e)
+    // when editing a finished workout, typed-in sets count without ticking
+    const sets = editing ? e.sets.filter((s) => s.r > 0).map((s) => ({ ...s, done: true })) : doneSets(e)
     if (sets.length === 0 && !e.note.trim()) await db.entries.delete(e.id!)
-    else if (sets.length !== e.sets.length) await db.entries.update(e.id!, { sets })
+    else await db.entries.update(e.id!, { sets })
   }
 }
 
@@ -42,7 +43,8 @@ export function Active({ sessionId }: { sessionId: number }) {
   const all = entries.flatMap(workSets)
 
   const finish = async () => {
-    if (!entries.some((e) => doneSets(e).length > 0)) {
+    const counts = (e: Entry) => (editing ? e.sets.some((s) => s.r > 0) : doneSets(e).length > 0)
+    if (!entries.some(counts)) {
       if (!confirm(t.finishEmptyConfirm)) return
       await db.transaction('rw', db.entries, db.sessions, async () => {
         await db.entries.where('sessionId').equals(sessionId).delete()
@@ -53,7 +55,7 @@ export function Active({ sessionId }: { sessionId: number }) {
       return
     }
     await db.transaction('rw', db.entries, db.sessions, async () => {
-      await tidy(sessionId)
+      await tidy(sessionId, editing)
       if (!editing) await db.sessions.update(sessionId, { finishedAt: Date.now() })
     })
     rest.stop()
@@ -82,6 +84,24 @@ export function Active({ sessionId }: { sessionId: number }) {
           {editing ? t.done : t.finish}
         </button>
       </header>
+
+      {editing && (
+        <label className="date-edit">
+          {t.dateLabel}
+          <input
+            type="date"
+            value={session.date}
+            onChange={(e) => {
+              const d = e.target.value
+              if (!d) return
+              db.transaction('rw', db.sessions, db.entries, async () => {
+                await db.sessions.update(sessionId, { date: d })
+                await db.entries.where('sessionId').equals(sessionId).modify({ date: d })
+              })
+            }}
+          />
+        </label>
+      )}
 
       <ul className="active-list">
         {entries.map((e) => {

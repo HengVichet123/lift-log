@@ -638,3 +638,38 @@ button:disabled { cursor: default; opacity: 0.4; }
 .pick-text { display: flex; flex-direction: column; flex: 1; min-width: 0; }
 .pick-plus { color: var(--accent); flex: none; }
 .own { padding-top: 12px; border-top: 1px solid var(--line); }
+
+/* ---------- history calendar ---------- */
+
+.cal { padding: 8px 10px 12px; border-radius: var(--r-card); background: var(--surface); }
+.cal-head { display: flex; align-items: center; gap: 2px; margin-bottom: 6px; }
+.cal-title { flex: 1; text-align: center; font: 700 20px/1 var(--font-num); }
+:lang(km) .cal-title { font-family: var(--font); font-size: 17px; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.cal-wd { padding: 2px 0 4px; text-align: center; color: var(--ink-2); font-size: 12px; font-weight: 600; }
+.cal-day {
+  position: relative;
+  aspect-ratio: 1;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  font: 600 17px/1 var(--font-num);
+  font-variant-numeric: tabular-nums;
+}
+.cal-day.has { background: color-mix(in srgb, var(--accent) 22%, transparent); color: var(--ink); }
+.cal-day.today { box-shadow: inset 0 0 0 1.5px var(--ink-2); }
+.cal-day[aria-pressed='true'] { background: var(--accent); color: var(--accent-ink); }
+
+.day-empty { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border-radius: var(--r-card); background: var(--surface); }
+.day-empty p { margin: 0; }
+.chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.history-list .h-card { padding: 0; overflow: hidden; }
+.h-open { display: flex; flex-direction: column; gap: 8px; width: 100%; padding: 14px 14px 10px; border: 0; background: transparent; text-align: left; }
+.h-open:active { background: var(--surface-2); }
+.h-actions { display: flex; gap: 8px; padding: 0 14px 14px; }
+
+.date-edit { display: flex; align-items: center; gap: 10px; color: var(--ink-2); font-weight: 600; font-size: 14px; }
+.date-edit input { min-height: 42px; padding: 0 10px; border: 1px solid var(--line); border-radius: var(--r-in); background: var(--surface); color: var(--ink); }
+.past { display: flex; flex-direction: column; gap: 6px; }
+.past .muted { margin: 0; text-align: center; }

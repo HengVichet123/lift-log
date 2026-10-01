@@ -1,6 +1,7 @@
-import { Barbell, Clock, Trophy } from '@phosphor-icons/react'
+import { Barbell, CaretLeft, CaretRight, Clock, PencilSimple, Plus, Trash, Trophy } from '@phosphor-icons/react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { db, finishedSessions, parseDay, workSets } from '../db'
+import { useMemo } from 'react'
+import { db, dayKey, finishedSessions, parseDay, workSets, type Session } from '../db'
 import { useExercises } from '../exercises'
 import { fmtDuration, fmtSet, fmtVolume, topSet, volume } from '../format'
 import { useI18n } from '../i18n'
@@ -9,73 +10,193 @@ import { go } from '../router'
 import { HeaderTools } from '../components/HeaderTools'
 import { ScreenHeader } from '../components/ScreenHeader'
 
-export function History() {
+/** Add a finished workout on a past (or any) day and open it for editing. */
+async function logForDay(day: string, dayTypeId: string) {
+  const type = await db.dayTypes.get(dayTypeId)
+  const start = parseDay(day)
+  start.setHours(18, 0, 0, 0)
+  const startedAt = start.getTime()
+  const sessionId = (await db.sessions.add({ date: day, dayTypeId, createdAt: Date.now(), startedAt, finishedAt: startedAt + 3_600_000 })) as number
+  for (const [order, exerciseId] of (type?.exerciseIds ?? []).entries()) {
+    await db.entries.add({ sessionId, date: day, exerciseId, order, sets: [{ w: 0, r: 0 }, { w: 0, r: 0 }, { w: 0, r: 0 }], note: '' })
+  }
+  go({ name: 'active', sessionId })
+}
+
+async function deleteSession(id: number) {
+  await db.transaction('rw', db.entries, db.sessions, async () => {
+    await db.entries.where('sessionId').equals(id).delete()
+    await db.sessions.delete(id)
+  })
+}
+
+function monthGrid(year: number, month: number): (Date | null)[] {
+  const first = new Date(year, month, 1)
+  const lead = (first.getDay() + 6) % 7 // weeks start on Monday
+  const days = new Date(year, month + 1, 0).getDate()
+  const cells: (Date | null)[] = Array.from({ length: lead }, () => null)
+  for (let d = 1; d <= days; d++) cells.push(new Date(year, month, d))
+  while (cells.length % 7) cells.push(null)
+  return cells
+}
+
+export function History({ day }: { day?: string }) {
   const { t, date } = useI18n()
-  const lookup = useExercises()
-  const items = useLiveQuery(async () => {
-    const sessions = (await finishedSessions()).reverse()
-    const types = new Map((await db.dayTypes.toArray()).map((d) => [d.id, d.name]))
-    return Promise.all(
-      sessions.map(async (s) => ({
-        s,
-        name: types.get(s.dayTypeId) ?? t.workout,
-        entries: (await db.entries.where('sessionId').equals(s.id!).toArray()).sort((a, b) => a.order - b.order),
-        prs: (await sessionRecords(s.id!)).length,
-      })),
-    )
-  }, [t.workout])
+  const today = dayKey()
+  const sessions = useLiveQuery(finishedSessions, [])
+  const types = useLiveQuery(() => db.dayTypes.orderBy('order').toArray(), [])
+
+  const byDay = useMemo(() => {
+    const m = new Map<string, Session[]>()
+    for (const s of sessions ?? []) m.set(s.date, [...(m.get(s.date) ?? []), s])
+    return m
+  }, [sessions])
+
+  // the day to show: from the URL, else today, else the latest workout
+  const selected = day ?? (byDay.has(today) || !sessions?.length ? today : sessions[sessions.length - 1].date)
+  const sel = parseDay(selected)
+  const cells = monthGrid(sel.getFullYear(), sel.getMonth())
+  const pick = (d: string) => go({ name: 'history', day: d }, true)
+  const shiftMonth = (n: number) => {
+    const d = new Date(sel.getFullYear(), sel.getMonth() + n, 1)
+    pick(dayKey(d))
+  }
+  const dayList = byDay.get(selected) ?? []
 
   return (
     <main className="screen">
       <ScreenHeader title={t.history} right={<HeaderTools />} />
-      {items && items.length === 0 && (
-        <section className="empty">
-          <p className="empty-title">{t.emptyHistory}</p>
-          <p className="empty-hint">{t.emptyHistoryHint}</p>
-        </section>
-      )}
-      <ul className="history-list">
-        {(items ?? []).map(({ s, name, entries, prs }) => {
-          const sets = entries.flatMap(workSets)
-          return (
-            <li key={s.id}>
-              <button type="button" className="h-card" onClick={() => go({ name: 'summary', sessionId: s.id! })}>
-                <span className="h-top">
-                  <span className="h-name">{name}</span>
-                  <span className="muted">{date(parseDay(s.date), 'medium')}</span>
-                </span>
-                <span className="h-stats">
-                  <span>
-                    <Clock size={16} /> {fmtDuration(s.finishedAt! - s.startedAt)}
-                  </span>
-                  <span>
-                    <Barbell size={16} /> {fmtVolume(volume(sets))} {t.kg}
-                  </span>
-                  {prs > 0 && (
-                    <span className="h-pr">
-                      <Trophy size={16} weight="fill" /> {prs}
-                    </span>
-                  )}
-                </span>
-                <span className="h-table">
-                  {entries.map((e) => {
-                    const ex = lookup(e.exerciseId)
-                    const best = topSet(workSets(e))
-                    return ex ? (
-                      <span key={e.id} className="h-row">
-                        <span className="h-ex">
-                          {e.sets.length} × {ex.name}
-                        </span>
-                        <span className="h-best">{best ? fmtSet(best, t.bw) : ''}</span>
-                      </span>
-                    ) : null
-                  })}
-                </span>
+
+      <section className="cal">
+        <div className="cal-head">
+          <button type="button" className="icon-btn" aria-label={t.prevMonth} onClick={() => shiftMonth(-1)}>
+            <CaretLeft size={22} weight="bold" />
+          </button>
+          <span className="cal-title">{date(sel, 'month')}</span>
+          <button type="button" className="icon-btn" aria-label={t.nextMonth} onClick={() => shiftMonth(1)}>
+            <CaretRight size={22} weight="bold" />
+          </button>
+          <button type="button" className="btn-chip" onClick={() => pick(today)}>
+            {t.todayBtn}
+          </button>
+        </div>
+        <div className="cal-grid" role="grid">
+          {t.weekdaysShort.map((w, i) => (
+            <span key={i} className="cal-wd">
+              {w}
+            </span>
+          ))}
+          {cells.map((d, i) => {
+            if (!d) return <span key={i} />
+            const k = dayKey(d)
+            const has = byDay.has(k)
+            return (
+              <button
+                type="button"
+                key={i}
+                className={`cal-day ${has ? 'has' : ''} ${k === today ? 'today' : ''}`}
+                aria-pressed={k === selected}
+                aria-label={date(d, 'long')}
+                onClick={() => pick(k)}
+              >
+                {d.getDate()}
               </button>
-            </li>
-          )
-        })}
-      </ul>
+            )
+          })}
+        </div>
+      </section>
+
+      <section>
+        <h2 className="section-title">{date(sel, 'long')}</h2>
+        {dayList.length === 0 ? (
+          <div className="day-empty">
+            <p className="muted">{t.noWorkoutDay}</p>
+            {selected <= today && (
+              <>
+                <p className="field-label">{t.logForDay}</p>
+                <div className="chip-row">
+                  {(types ?? []).map((dt) => (
+                    <button type="button" key={dt.id} className="btn-chip" onClick={() => logForDay(selected, dt.id)}>
+                      <Plus size={16} weight="bold" />
+                      {dt.name}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        ) : (
+          <ul className="history-list">
+            {dayList.map((s) => (
+              <DayWorkout key={s.id} s={s} name={types?.find((x) => x.id === s.dayTypeId)?.name ?? t.workout} />
+            ))}
+          </ul>
+        )}
+      </section>
     </main>
+  )
+}
+
+function DayWorkout({ s, name }: { s: Session; name: string }) {
+  const { t } = useI18n()
+  const lookup = useExercises()
+  const data = useLiveQuery(async () => {
+    const entries = (await db.entries.where('sessionId').equals(s.id!).toArray()).sort((a, b) => a.order - b.order)
+    return { entries, prs: (await sessionRecords(s.id!)).length }
+  }, [s.id])
+  const entries = data?.entries ?? []
+  const sets = entries.flatMap(workSets)
+
+  return (
+    <li className="h-card">
+      <button type="button" className="h-open" onClick={() => go({ name: 'summary', sessionId: s.id! })}>
+        <span className="h-top">
+          <span className="h-name">{name}</span>
+        </span>
+        <span className="h-stats">
+          <span>
+            <Clock size={16} /> {fmtDuration(s.finishedAt! - s.startedAt)}
+          </span>
+          <span>
+            <Barbell size={16} /> {fmtVolume(volume(sets))} {t.kg}
+          </span>
+          {!!data?.prs && (
+            <span className="h-pr">
+              <Trophy size={16} weight="fill" /> {data.prs}
+            </span>
+          )}
+        </span>
+        <span className="h-table">
+          {entries.map((e) => {
+            const ex = lookup(e.exerciseId)
+            const best = topSet(workSets(e))
+            return ex ? (
+              <span key={e.id} className="h-row">
+                <span className="h-ex">
+                  {e.sets.length} × {ex.name}
+                </span>
+                <span className="h-best">{best ? fmtSet(best, t.bw) : ''}</span>
+              </span>
+            ) : null
+          })}
+        </span>
+      </button>
+      <span className="h-actions">
+        <button type="button" className="btn-chip" onClick={() => go({ name: 'active', sessionId: s.id! })}>
+          <PencilSimple size={16} />
+          {t.edit}
+        </button>
+        <button
+          type="button"
+          className="btn-chip danger"
+          onClick={() => {
+            if (confirm(t.deleteWorkoutConfirm)) deleteSession(s.id!)
+          }}
+        >
+          <Trash size={16} />
+          {t.deleteBtn}
+        </button>
+      </span>
+    </li>
   )
 }

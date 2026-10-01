@@ -7,7 +7,7 @@ export type Route =
   | { name: 'workout' }
   | { name: 'active'; sessionId: number }
   | { name: 'summary'; sessionId: number }
-  | { name: 'history' }
+  | { name: 'history'; day?: string }
   | { name: 'progress'; typeId?: string }
   | { name: 'exercise'; id: string }
   | { name: 'routine'; typeId: string }
@@ -18,7 +18,7 @@ function parse(hash: string): Route {
   switch (a) {
     case 'w': return b ? { name: 'active', sessionId: Number(b) } : { name: 'workout' }
     case 's': return b ? { name: 'summary', sessionId: Number(b) } : { name: 'history' }
-    case 'history': return { name: 'history' }
+    case 'history': return { name: 'history', day: b || undefined }
     case 'progress': return { name: 'progress', typeId: b || undefined }
     case 'ex': return b ? { name: 'exercise', id: b } : { name: 'progress' }
     case 'routine': return b ? { name: 'routine', typeId: b } : { name: 'workout' }
@@ -37,7 +37,7 @@ export function href(r: Route): string {
     case 'workout': return '#/'
     case 'active': return `#/w/${r.sessionId}`
     case 'summary': return `#/s/${r.sessionId}`
-    case 'history': return '#/history'
+    case 'history': return r.day ? `#/history/${r.day}` : '#/history'
     case 'progress': return r.typeId ? `#/progress/${enc(r.typeId)}` : '#/progress'
     case 'exercise': return `#/ex/${enc(r.id)}`
     case 'routine': return `#/routine/${enc(r.typeId)}`

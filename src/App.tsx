@@ -14,7 +14,7 @@ function Screen({ route }: { route: Route }) {
     case 'workout': return <Workout />
     case 'active': return <Active key={route.sessionId} sessionId={route.sessionId} />
     case 'summary': return <Summary sessionId={route.sessionId} />
-    case 'history': return <History />
+    case 'history': return <History day={route.day} />
     case 'progress': return <Progress typeId={route.typeId} />
     case 'exercise': return <ExerciseDetail id={route.id} />
     case 'routine': return <Routine typeId={route.typeId} />

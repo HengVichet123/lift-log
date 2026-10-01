@@ -1,4 +1,4 @@
-import { DotsThreeVertical, Play, Plus, Trash } from '@phosphor-icons/react'
+import { CalendarPlus, DotsThreeVertical, Play, Plus, Trash } from '@phosphor-icons/react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
 import { activeSession, db, dayKey, daysBetween, finishedSessions, newId } from '../db'
@@ -106,6 +106,14 @@ export function Workout() {
           })}
         </ul>
       </section>
+
+      <div className="past">
+        <button type="button" className="btn-quiet wide" onClick={() => go({ name: 'history' })}>
+          <CalendarPlus size={20} />
+          {t.addPast}
+        </button>
+        <p className="muted">{t.addPastHint}</p>
+      </div>
 
       <form
         className="inline-form"

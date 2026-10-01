@@ -117,7 +117,7 @@ export function Summary({ sessionId }: { sessionId: number }) {
         </ul>
       </section>
 
-      <button type="button" className="btn-primary" onClick={() => go({ name: 'history' }, true)}>
+      <button type="button" className="btn-primary" onClick={() => go({ name: 'history', day: session.date }, true)}>
         {t.done}
       </button>
     </main>
