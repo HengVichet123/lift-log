@@ -46,7 +46,7 @@ export function Summary({ sessionId }: { sessionId: number }) {
             <small className="screen-sub">{date(parseDay(session.date), 'long')}</small>
           </>
         }
-        onBack={() => back({ name: 'history' })}
+        onBack={() => back({ name: 'history', day: session.date })}
         right={
           <button type="button" className="icon-btn" aria-label={t.edit} onClick={() => go({ name: 'active', sessionId })}>
             <PencilSimple size={22} />

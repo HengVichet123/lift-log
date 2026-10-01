@@ -44,7 +44,11 @@ const DEFAULT_PROGRAM: DayType[] = [
 ]
 
 export async function seedIfEmpty() {
-  await db.transaction('rw', db.dayTypes, async () => {
+  await db.transaction('rw', db.dayTypes, db.sessions, async () => {
     if ((await db.dayTypes.count()) === 0) await db.dayTypes.bulkAdd(DEFAULT_PROGRAM)
+    // workouts left running by the old "Start" version become normal logged days
+    await db.sessions.filter((s) => !s.finishedAt).modify((s) => {
+      s.finishedAt = s.startedAt
+    })
   })
 }

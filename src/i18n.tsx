@@ -62,6 +62,7 @@ const en = {
   logForDay: 'Log a workout for this day',
   deleteBtn: 'Delete',
   addAnother: 'Add another workout on this day',
+  copyLast: 'Same as last time',
   notFoundWorkout: 'This workout no longer exists. It may have been deleted.',
   notFoundExercise: 'This exercise could not be found.',
   typeRepsFirst: 'Type the reps first, then tick.',

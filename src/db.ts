@@ -102,9 +102,9 @@ export function daysBetween(a: string, b: string): number {
   return Math.round((parseDay(b).getTime() - parseDay(a).getTime()) / 86_400_000)
 }
 
-/** Sets that count: ticked off with reps. */
+/** Sets that count: any set with reps filled in. */
 export function doneSets(e: Entry): SetEntry[] {
-  return e.sets.filter((s) => s.done && s.r > 0)
+  return e.sets.filter((s) => s.r > 0)
 }
 
 /** Done sets without warm-ups: what records and charts use. */
@@ -112,11 +112,7 @@ export function workSets(e: Entry): SetEntry[] {
   return doneSets(e).filter((s) => !s.warmup)
 }
 
-export async function activeSession(): Promise<Session | undefined> {
-  return (await db.sessions.toArray()).find((s) => !s.finishedAt)
-}
-
-/** Finished workouts, oldest first. */
+/** All logged workouts, oldest first. */
 export async function finishedSessions(): Promise<Session[]> {
-  return (await db.sessions.orderBy('date').toArray()).filter((s) => s.finishedAt)
+  return db.sessions.orderBy('date').toArray()
 }

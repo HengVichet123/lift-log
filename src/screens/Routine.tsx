@@ -24,7 +24,7 @@ export function Routine({ typeId }: { typeId: string }) {
 
   return (
     <main className="screen">
-      <ScreenHeader title={t.edit} onBack={() => back({ name: 'workout' })} />
+      <ScreenHeader title={t.edit} onBack={() => back({ name: 'routines' })} />
 
       <div className="inline-form">
         <label className="field-label" htmlFor="routine-name">
@@ -78,7 +78,7 @@ export function Routine({ typeId }: { typeId: string }) {
         onClick={async () => {
           if (!confirm(t.deleteRoutineConfirm)) return
           await db.dayTypes.delete(typeId)
-          go({ name: 'workout' }, true)
+          go({ name: 'routines' }, true)
         }}
       >
         <Trash size={20} />

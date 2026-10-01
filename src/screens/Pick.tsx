@@ -58,12 +58,12 @@ export function Pick({ target }: { target: PickTarget }) {
 
   const choose = async (id: string) => {
     await addTo(target, id)
-    back({ name: 'workout' })
+    back({ name: 'history' })
   }
 
   return (
     <main className="screen">
-      <ScreenHeader title={t.pickExercise} onBack={() => back({ name: 'workout' })} />
+      <ScreenHeader title={t.pickExercise} onBack={() => back({ name: 'history' })} />
 
       <div className="search">
         <MagnifyingGlass size={20} aria-hidden />

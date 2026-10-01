@@ -7,11 +7,11 @@ import { Pick } from './screens/Pick'
 import { Progress } from './screens/Progress'
 import { Routine } from './screens/Routine'
 import { Summary } from './screens/Summary'
-import { Workout } from './screens/Workout'
+import { Routines } from './screens/Routines'
 
 function Screen({ route }: { route: Route }) {
   switch (route.name) {
-    case 'workout': return <Workout />
+    case 'routines': return <Routines />
     case 'active': return <Active key={route.sessionId} sessionId={route.sessionId} />
     case 'summary': return <Summary sessionId={route.sessionId} />
     case 'history': return <History day={route.day} />
@@ -24,8 +24,8 @@ function Screen({ route }: { route: Route }) {
 
 function tabOf(route: Route): Tab | null {
   switch (route.name) {
-    case 'workout': return 'workout'
     case 'history': return 'history'
+    case 'routines': return 'routines'
     case 'progress': return 'progress'
     default: return null
   }

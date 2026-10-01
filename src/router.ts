@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 export type PickTarget = { kind: 'type'; id: string } | { kind: 'session'; id: number }
 
 export type Route =
-  | { name: 'workout' }
+  | { name: 'routines' }
   | { name: 'active'; sessionId: number }
   | { name: 'summary'; sessionId: number }
   | { name: 'history'; day?: string }
@@ -16,17 +16,18 @@ export type Route =
 function parse(hash: string): Route {
   const [, a, b, c] = hash.replace(/^#/, '').split('/').map(decodeURIComponent)
   switch (a) {
-    case 'w': return b ? { name: 'active', sessionId: Number(b) } : { name: 'workout' }
+    case 'w': return b ? { name: 'active', sessionId: Number(b) } : { name: 'history' }
+    case 'routines': return { name: 'routines' }
     case 's': return b ? { name: 'summary', sessionId: Number(b) } : { name: 'history' }
     case 'history': return { name: 'history', day: b || undefined }
     case 'progress': return { name: 'progress', typeId: b || undefined }
     case 'ex': return b ? { name: 'exercise', id: b } : { name: 'progress' }
-    case 'routine': return b ? { name: 'routine', typeId: b } : { name: 'workout' }
+    case 'routine': return b ? { name: 'routine', typeId: b } : { name: 'routines' }
     case 'pick':
       if (b === 'type' && c) return { name: 'pick', target: { kind: 'type', id: c } }
       if (b === 'session' && c) return { name: 'pick', target: { kind: 'session', id: Number(c) } }
-      return { name: 'workout' }
-    default: return { name: 'workout' }
+      return { name: 'history' }
+    default: return { name: 'history' }
   }
 }
 
@@ -34,10 +35,10 @@ const enc = encodeURIComponent
 
 export function href(r: Route): string {
   switch (r.name) {
-    case 'workout': return '#/'
+    case 'routines': return '#/routines'
     case 'active': return `#/w/${r.sessionId}`
     case 'summary': return `#/s/${r.sessionId}`
-    case 'history': return r.day ? `#/history/${r.day}` : '#/history'
+    case 'history': return r.day ? `#/history/${r.day}` : '#/'
     case 'progress': return r.typeId ? `#/progress/${enc(r.typeId)}` : '#/progress'
     case 'exercise': return `#/ex/${enc(r.id)}`
     case 'routine': return `#/routine/${enc(r.typeId)}`

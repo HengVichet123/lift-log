@@ -1,26 +1,38 @@
-import { Check, DotsThree, NotePencil, Plus, Trash, X } from '@phosphor-icons/react'
+import { Copy, DotsThree, NotePencil, Plus, Trash, X } from '@phosphor-icons/react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { useEffect, useRef, useState } from 'react'
-import { db, dayKey, doneSets, workSets, type Entry, type SetEntry } from '../db'
+import { useEffect, useState } from 'react'
+import { db, dayKey, doneSets, parseDay, workSets, type Entry, type SetEntry } from '../db'
 import { useExercises, type Exercise } from '../exercises'
 import { fmtKg, fmtReps, fmtVolume, volume } from '../format'
 import { useI18n } from '../i18n'
-import { back, go } from '../router'
+import { go } from '../router'
 import { ExercisePhoto } from '../components/ExercisePhoto'
 
-/** Keep only ticked sets; drop exercises with nothing left. */
-async function tidy(sessionId: number, editing: boolean) {
+/** Keep only sets with reps; drop exercises with nothing left. Returns false if the workout is empty. */
+async function tidy(sessionId: number): Promise<boolean> {
   const entries = await db.entries.where('sessionId').equals(sessionId).toArray()
+  let any = false
   for (const e of entries) {
-    // when editing a finished workout, typed-in sets count without ticking
-    const sets = editing ? e.sets.filter((s) => s.r > 0).map((s) => ({ ...s, done: true })) : doneSets(e)
+    const sets = e.sets.filter((s) => s.r > 0)
     if (sets.length === 0 && !e.note.trim()) await db.entries.delete(e.id!)
-    else await db.entries.update(e.id!, { sets })
+    else {
+      any = true
+      if (sets.length !== e.sets.length) await db.entries.update(e.id!, { sets })
+    }
   }
+  return any
 }
 
+async function removeSession(id: number) {
+  await db.transaction('rw', db.entries, db.sessions, async () => {
+    await db.entries.where('sessionId').equals(id).delete()
+    await db.sessions.delete(id)
+  })
+}
+
+/** Fill in or change one day's workout. Sets with reps count; nothing to tick. */
 export function Active({ sessionId }: { sessionId: number }) {
-  const { t } = useI18n()
+  const { t, date } = useI18n()
   const lookup = useExercises()
   const data = useLiveQuery(async () => {
     const session = await db.sessions.get(sessionId)
@@ -30,74 +42,57 @@ export function Active({ sessionId }: { sessionId: number }) {
     return { session, type, entries }
   }, [sessionId])
 
-  // the workout was deleted (or the link is old): go back to the Workout tab
+  // the workout was deleted (or the link is old): go home
   useEffect(() => {
-    if (data === null) go({ name: 'workout' }, true)
+    if (data === null) go({ name: 'history' }, true)
   }, [data])
 
   if (!data) return <main className="screen" />
   const { session, type, entries } = data
-  const editing = !!session.finishedAt
   const all = entries.flatMap(workSets)
 
-  const finish = async () => {
-    const counts = (e: Entry) => (editing ? e.sets.some((s) => s.r > 0) : doneSets(e).length > 0)
-    if (!entries.some(counts)) {
-      if (!confirm(t.finishEmptyConfirm)) return
-      await db.transaction('rw', db.entries, db.sessions, async () => {
-        await db.entries.where('sessionId').equals(sessionId).delete()
-        await db.sessions.delete(sessionId)
-      })
-      go({ name: 'workout' }, true)
-      return
-    }
-    await db.transaction('rw', db.entries, db.sessions, async () => {
-      await tidy(sessionId, editing)
-      if (!editing) await db.sessions.update(sessionId, { finishedAt: Date.now() })
-    })
-    go({ name: 'summary', sessionId }, true)
+  const close = async () => {
+    // an empty day (opened by mistake) is not kept
+    if (!(await db.transaction('rw', db.entries, db.sessions, () => tidy(sessionId)))) await removeSession(sessionId)
+    go({ name: 'history', day: session.date }, true)
   }
 
   return (
     <main className="screen screen-active">
       <header className="active-header">
-        <button type="button" className="icon-btn" aria-label={t.back} onClick={() => back({ name: 'workout' })}>
+        <button type="button" className="icon-btn" aria-label={t.back} onClick={close}>
           <X size={24} weight="bold" />
         </button>
         <div className="active-title">
-          <span className="active-name">{type?.name ?? '?'}</span>
+          <span className="active-name">{type?.name ?? t.workout}</span>
           <span className="active-stats">
+            <span>{date(parseDay(session.date), 'medium')}</span>
             <span>
               {fmtVolume(volume(all))} {t.kg}
             </span>
-            <span>
-              {all.length} {t.setsWord.toLowerCase()}
-            </span>
           </span>
         </div>
-        <button type="button" className="btn-finish" onClick={finish}>
-          {editing ? t.done : t.finish}
+        <button type="button" className="btn-finish" onClick={close}>
+          {t.done}
         </button>
       </header>
 
-      {editing && (
-        <label className="date-edit">
-          {t.dateLabel}
-          <input
-            type="date"
-            value={session.date}
-            max={dayKey()}
-            onChange={(e) => {
-              const d = e.target.value
-              if (!d || d > dayKey()) return // no workouts in the future
-              db.transaction('rw', db.sessions, db.entries, async () => {
-                await db.sessions.update(sessionId, { date: d })
-                await db.entries.where('sessionId').equals(sessionId).modify({ date: d })
-              })
-            }}
-          />
-        </label>
-      )}
+      <label className="date-edit">
+        {t.dateLabel}
+        <input
+          type="date"
+          value={session.date}
+          max={dayKey()}
+          onChange={(e) => {
+            const d = e.target.value
+            if (!d || d > dayKey()) return // no workouts in the future
+            db.transaction('rw', db.sessions, db.entries, async () => {
+              await db.sessions.update(sessionId, { date: d })
+              await db.entries.where('sessionId').equals(sessionId).modify({ date: d })
+            })
+          }}
+        />
+      </label>
 
       <ul className="active-list">
         {entries.map((e) => {
@@ -115,18 +110,14 @@ export function Active({ sessionId }: { sessionId: number }) {
         type="button"
         className="btn-danger-quiet"
         onClick={async () => {
-          if (!confirm(editing ? t.deleteWorkoutConfirm : t.cancelConfirm)) return
-          await db.transaction('rw', db.entries, db.sessions, async () => {
-            await db.entries.where('sessionId').equals(sessionId).delete()
-            await db.sessions.delete(sessionId)
-          })
-              go({ name: 'workout' }, true)
+          if (!confirm(t.deleteWorkoutConfirm)) return
+          await removeSession(sessionId)
+          go({ name: 'history', day: session.date }, true)
         }}
       >
         <Trash size={20} />
-        {editing ? t.deleteWorkout : t.cancelWorkout}
+        {t.deleteWorkout}
       </button>
-
     </main>
   )
 }
@@ -152,22 +143,6 @@ function ExerciseCard({ ex, entry, sessionDate }: { ex: Exercise; entry: Entry; 
     const sameKind = prevSets.filter((p) => !!p.warmup === !!s.warmup)
     const k = entry.sets.slice(0, i).filter((x) => !!x.warmup === !!s.warmup).length
     return sameKind[k] ?? entry.sets[i - 1]
-  }
-
-  /** Returns false when there is nothing to save yet (no reps typed, nothing to copy). */
-  const tick = (i: number): boolean => {
-    const s = entry.sets[i]
-    if (s.done) {
-      update(i, { done: false })
-      return true
-    }
-    const h = hint(i)
-    const w = s.w || h?.w || 0
-    const r = s.r || h?.r || 0
-    if (r <= 0) return false
-    update(i, { w, r, rTo: s.rTo ?? h?.rTo, assist: s.assist ?? h?.assist, done: true })
-    navigator.vibrate?.(20)
-    return true
   }
 
   let n = 0
@@ -217,9 +192,6 @@ function ExerciseCard({ ex, entry, sessionDate }: { ex: Exercise; entry: Entry; 
           <span role="columnheader">{t.previousCol}</span>
           <span role="columnheader">{t.kg}</span>
           <span role="columnheader">{t.reps}</span>
-          <span role="columnheader" aria-label="Done">
-            <Check size={16} weight="bold" />
-          </span>
         </div>
         {entry.sets.map((s, i) => {
           if (!s.warmup) n++
@@ -234,19 +206,25 @@ function ExerciseCard({ ex, entry, sessionDate }: { ex: Exercise; entry: Entry; 
               hint={h}
               onPrev={() => p && update(i, { w: p.w, r: p.r, rTo: p.rTo, assist: p.assist })}
               onChange={(patch) => update(i, patch)}
-              onTick={() => tick(i)}
               onDelete={() => save(entry.sets.filter((_, j) => j !== i))}
             />
           )
         })}
       </div>
 
+      {prevSets.length > 0 && !entry.sets.some((s) => s.r > 0) && (
+        <button type="button" className="btn-chip copy-last" onClick={() => save(prevSets.map((s) => ({ w: s.w, r: s.r, rTo: s.rTo, assist: s.assist, warmup: s.warmup })))}>
+          <Copy size={16} />
+          {t.copyLast}
+        </button>
+      )}
+
       <button
         type="button"
         className="add-set"
         onClick={() => {
           const last = entry.sets[entry.sets.length - 1]
-          save([...entry.sets, { w: last?.done ? last.w : 0, r: 0 }])
+          save([...entry.sets, { w: last?.w ?? 0, r: 0 }])
         }}
       >
         <Plus size={18} weight="bold" />
@@ -263,39 +241,22 @@ interface RowProps {
   hint?: SetEntry
   onPrev: () => void
   onChange: (patch: Partial<SetEntry>) => void
-  onTick: () => boolean
   onDelete: () => void
 }
 
-function SetRow({ label, s, prev, hint, onPrev, onChange, onTick, onDelete }: RowProps) {
+function SetRow({ label, s, prev, hint, onPrev, onChange, onDelete }: RowProps) {
   const { t } = useI18n()
   const [open, setOpen] = useState(!!(s.rTo || s.assist))
-  const [needReps, setNeedReps] = useState(false)
-  const kgRef = useRef<HTMLInputElement>(null)
-  const repsRef = useRef<HTMLInputElement>(null)
-  const tickOrAsk = () => {
-    if (onTick()) {
-      setNeedReps(false)
-      return
-    }
-    // first time on this exercise: point at the empty box instead of doing nothing
-    setNeedReps(true)
-    ;(s.w ? repsRef : kgRef).current?.focus()
-  }
   return (
-    <div className={`set-row ${s.done ? 'is-done' : ''} ${s.warmup ? 'is-warmup' : ''}`} role="row">
+    <div className={`set-row ${s.r > 0 ? 'is-done' : ''} ${s.warmup ? 'is-warmup' : ''}`} role="row">
       <button type="button" className="set-label" aria-expanded={open} aria-label={`${t.setCol} ${label}: ${t.options}`} onClick={() => setOpen((v) => !v)}>
         {label}
       </button>
       <button type="button" className="set-prev" onClick={onPrev} disabled={!prev}>
         {prev ? `${prev.w > 0 ? fmtKg(prev.w) : t.bw} × ${fmtReps(prev)}` : '-'}
       </button>
-      <Num inputRef={kgRef} value={s.w} hint={hint && hint.w > 0 ? fmtKg(hint.w) : ''} label={t.kg} onCommit={(w) => onChange({ w })} />
-      <Num inputRef={repsRef} value={s.r} hint={hint ? fmtKg(hint.r) : ''} label={t.reps} onCommit={(r) => { onChange({ r }); if (r > 0) setNeedReps(false) }} />
-      <button type="button" className="tick" aria-pressed={!!s.done} aria-label={t.done} onClick={tickOrAsk}>
-        <Check size={20} weight="bold" />
-      </button>
-      {needReps && !s.done && <p className="set-help" role="alert">{t.typeRepsFirst}</p>}
+      <Num value={s.w} hint={hint && hint.w > 0 ? fmtKg(hint.w) : ''} label={t.kg} onCommit={(w) => onChange({ w })} />
+      <Num value={s.r} hint={hint ? fmtKg(hint.r) : ''} label={t.reps} onCommit={(r) => onChange({ r })} />
       {open && (
         <div className="set-extra">
           <label className="mini">
@@ -328,7 +289,7 @@ interface NumProps {
 
 function Num({ value, hint, label, onCommit, inputRef }: NumProps) {
   const [text, setText] = useState(value ? fmtKg(value) : '')
-  // follow changes made elsewhere (tick, tap on Previous)
+  // follow changes made elsewhere (tap on Previous, Same as last time)
   useEffect(() => {
     setText((cur) => ((parseFloat(cur) || 0) === value ? cur : value ? fmtKg(value) : ''))
   }, [value])

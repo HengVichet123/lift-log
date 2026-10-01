@@ -364,7 +364,7 @@ button:disabled { cursor: default; opacity: 0.4; }
 .set-table { margin-top: 8px; }
 .set-head, .set-row {
   display: grid;
-  grid-template-columns: 38px 1fr 64px 64px 44px;
+  grid-template-columns: 38px 1fr 76px 70px;
   align-items: center;
   gap: 6px;
 }
@@ -678,9 +678,13 @@ button:disabled { cursor: default; opacity: 0.4; }
   .screen { padding: 0 12px 32px; }
   .screen-header, .active-header { margin: 0 -12px; }
   .ex-card { padding: 10px 6px 6px; }
-  .set-head, .set-row { grid-template-columns: 26px 1fr 52px 46px 38px; gap: 4px; }
+  .set-head, .set-row { grid-template-columns: 26px 1fr 60px 54px; gap: 4px; }
   .set-prev { font-size: 14px; }
   .num { font-size: 18px; }
   .tick { width: 36px; height: 36px; }
   .set-extra, .set-help { padding-left: 30px; margin-left: 0; }
 }
+
+.copy-last { margin-top: 8px; }
+.num::placeholder { opacity: 0.55; }
+.day-empty .chip-row .btn-chip { min-height: 48px; padding: 0 18px; font-size: 16px; background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
